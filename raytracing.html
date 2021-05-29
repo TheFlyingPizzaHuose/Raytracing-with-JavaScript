@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+
+<html>
+<body>
+
+<canvas id="screen" width="720" height="404" style="border:1px solid #000000;">
+Your browser does not support the HTML canvas tag.
+</canvas>
+
+<script>
+
+var c = document.getElementById("screen");
+var ctx = c.getContext("2d");
+
+//draw image on screen function 
+function display(image){
+	var canvasImage = ctx.createImageData(c.width, c.height);
+	canvasImage.data.set(image);
+	ctx.putImageData(canvasImage, 0, 0);
+}
+
+//fills image data array with single color
+function fillScreen(R, G, B){
+	var c = document.getElementById("screen");
+	var result = [];
+	for (h = 0; h < c.height; h++){
+		for (w = 0; w < c.width; w++){
+			var i = ((h*c.width) + w) * 4;
+			temp[i    ] = R;
+			temp[i + 1] = G;
+			temp[i + 2] = B;
+			temp[i + 3] = 255;
+		}
+	}
+	return result;
+}
+
+//fast sine, tangent and cosine initilization
+function fastSinCosTanInitialize(resolutionX3, fov2){
+	var result = [[], [], []];
+	var accuracy = fov2/resolutionX3
+	for(i = 0; i <= Math.round(360/accuracy); i++){
+		
+		//calculates sin
+		result[0][i] = parseFloat(Math.sin(degToArc(i*accuracy)).toFixed(5));
+
+		//calculates cos
+		result[1][i] = parseFloat(Math.cos(degToArc(i*accuracy)).toFixed(5));
+
+		//calculates tan^-1 fraction
+		result[2][i] = parseFloat((result[1][i]/result[0][i]).toFixed(5));
+	}
+	return result;
+}
+
+//convert degrees to radians
+function degToArc(degrees){
+	var result = degrees/180 * Math.PI
+	return result;
+}
+
+//fast arctangent method
+function fastAtan(fraction){
+	var result = 0;
+	var temp = 1;
+	for(i = 0; i < tanTable.length; i++){
+		var temp2 = Math.abs(tanTable[i] - fraction);
+		if(temp2 < temp){
+			temp = temp2;
+			result = (360/tanTable.length) * i;
+		}	
+	}
+	return result;
+}
+
+//fast sine/cosine method
+function fastSinCos(angle, mode){
+	if(mode == 1){
+		var result = table[parseInt(angle/(360/sinTable.legnth))];
+	} else if (mode == 2){
+		var result  = table[parseInt(angle/(360/cosTable.legnth))];
+	}
+	return result;
+}
+
+//calculates determinandt
+function det(matrixV4){
+	var result = matrix[0]*matrix[3] - matrix[1]*matrix[2];
+	return result;
+}
+
+//calculate crossProduct(matrixV31, matrixV32){
+	var result = [];
+	var M1 = [matrixV31[1], matrixV32[1], matrixV31[2], matrixV32[2]];
+	var M2 = [matrixV31[2], matrixV32[2], matrixV31[0], matrixV32[0]];
+	var M3 = [matrixV31[0], matrixV32[0], matrixV31[1], matrixV32[1]];
+	result = [Math.abs(det(M1)), Math.abs(det(M2)), Math.abs(det(M3))];
+}
+
+//gets distance of two points
+function vectorDistance(point1, point2){
+	var result = Math.sqrt(Math.pow(point1[0]-point2[0], 2) + Math.pow(point1[1]-point2[1], 2) + Math.pow(point1[2]-point2[2], 2));
+	return result;
+}
+
+//parse OBJ
+function parseOBJ(file){
+	var result = [];
+	return result;
+}
+
+//calculate normals
+function calcNormals(faces3){
+	var result = faces3;
+	for(i = 0; i < result.length; i++){
+		result[i][5] = crossProduct(result[i][2], result[i][3]);
+	}
+	return result;
+}	
+
+//calculate reflection vetor
+function reflect(faceInfo, directionV3, mode){
+	var result = [0,0,0];
+	return result;
+}
+
+//calculate bounce location
+function bounceLocation(verteciesV3, directionV3, originV32){
+	var result = [0,0,0];
+	return result;
+}
+
+//determine closest intersection
+function bounce(originV33, directionV3, faces){
+	var result = 0;
+	return result;
+}
+
+//bounce pixels x amount of times
+function rayTrace(sceneData4, numberOfBounces, width, height, fov4){
+	var result = [];
+	return result;
+}
+
+//render method
+function render(sceneData2, cameraDirectionV32, resolutionX2, resolutionY2, fov5, cameraV33){
+
+	//calculates normals
+	var sceneData3 = calcNormals(sceneData2);
+
+	//creates image data
+	var imageData = rayTrace(sceneData3, 2, resolutionX2, resolutionY2, fov5);
+
+	//draws image
+	display(imageData);
+}
+
+//creates sine, tangent and cosine lookup tables
+var tempMain = fastSinCosTanInitialize(c.width, 70);
+var sinTable = tempMain[0];
+var cosTable = tempMain[1];
+var tanTable = tempMain[2];
+
+//temporary variable assignments
+var sceneData = [];
+var cameraDirectionV3 = [];
+var cameraV3 = [0, 0, 0];
+var fov = 0;
+
+setInterval(render(sceneData, cameraDirectionV3, c.width, c.height, fov, cameraV3), 1);
+
+</script>
+</body>
+</html>
