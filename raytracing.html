@@ -106,24 +106,37 @@ function parseOBJ(file){
 }
 
 //calculate normals
-function calcNormals(faces3){
-	var result = faces3;
+function calcNormals(sceneData5){
+	var result = sceneData5;
 	for(i = 0; i < result.length; i++){
-		result[i][5] = crossProduct(result[i][2], result[i][3]);
+		result[i][4] = crossProduct(result[i][2], result[i][3]);
 	}
-	return result;
-}	
-
-//calculate reflection vetor
-function reflect(faceInfo, directionV3, mode){
-	var result = [0,0,0];
 	return result;
 }
 
-//calculate bounce location
-function bounceLocation(verteciesV3, directionV3, originV32){
-	var result = [0,0,0];
+//calculate midpoint of two vertecies
+function midPoint(vertex1, vertex2){
+	var result = [];
+        for (i = 0; i < 3; i++){
+                result[i] = (vertex1[i]-vertex2[i])/2
+	}
 	return result;
+}
+	
+//calculate intersection spheres of each face
+function calcIncSphere(sceneData6){
+        var result = sceneData6;
+	for (i = 0; i < result.length; i++){
+		
+		var midpointAB = midPoint(sceneData[i][1], sceneData[i][2]);
+		var midpointBC = midPoint(sceneData[i][2], sceneData[i][3]);
+		
+		var edge2vector = [sceneData[i][2][0] - sceneData[i][0][0], sceneData[i][2][1] - sceneData[i][0][1], sceneData[i][2][2] - sceneData[i][0][2]];
+		var edge1vector = [sceneData[i][1][0] - sceneData[i][0][0], sceneData[i][1][1] - sceneData[i][0][1], sceneData[i][1][2] - sceneData[i][0][2]];
+		
+		var peroendicularBisector1 = crossProduct(crossProduct(edge2vector, edge1vector);
+                result[i][6] = ;
+	}
 }
 
 //determine closest intersection
@@ -161,7 +174,7 @@ var cosTable = tempMain[1];
 var tanTable = tempMain[2];
 
 //temporary variable assignments
-var sceneData = [];
+var sceneData = []; //each element is an array with 7 elements [colorHEX, vertex1, vertex2, vertex3, normal, intersectionSphereCenter, roughness]
 var cameraDirectionV3 = [];
 var cameraV3 = [0, 0, 0];
 var fov = 0;
