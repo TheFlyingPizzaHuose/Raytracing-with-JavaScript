@@ -9,3 +9,4 @@
  g If ray intersects with face, proceed to step 2
 2. Create ray bounce function
 3. Create keypress-to-movement function
+4. Create OBJ parsing function
