@@ -36,6 +36,12 @@ function fillScreen(R, G, B){
 	return result;
 }
 
+//degrees to radians
+function degToArc(degree){
+	var result = Math.PI*degree/180;
+	return result;
+}
+
 //fast sine, tangent and cosine initilization
 function fastSinCosTanInitialize(resolutionX3, fov2){
 	var result = [[], [], []];
@@ -51,12 +57,6 @@ function fastSinCosTanInitialize(resolutionX3, fov2){
 		//calculates tan^-1 fraction
 		result[2][i] = parseFloat((result[1][i]/result[0][i]).toFixed(5));
 	}
-	return result;
-}
-
-//convert degrees to radians
-function degToArc(degrees){
-	var result = degrees/180 * Math.PI
 	return result;
 }
 
@@ -127,7 +127,7 @@ function bounceLocation(verteciesV3, directionV3, originV32){
 }
 
 //determine closest intersection
-function bounce(originV33, directionV3, faces){
+function bounce(originV33, directionV3, sceneData4){
 	var result = 0;
 	return result;
 }
@@ -141,8 +141,11 @@ function rayTrace(sceneData4, numberOfBounces, width, height, fov4){
 //render method
 function render(sceneData2, cameraDirectionV32, resolutionX2, resolutionY2, fov5, cameraV33){
 
-	//calculates normals
-	var sceneData3 = calcNormals(sceneData2);
+	if (updateScene == True){
+	    //calculates normals
+	    var sceneData3 = calcNormals(sceneData2);
+            //calculates intersection spheres
+	}
 
 	//creates image data
 	var imageData = rayTrace(sceneData3, 2, resolutionX2, resolutionY2, fov5);
