@@ -128,13 +128,25 @@ function calcIncSphere(sceneData6){
         var result = sceneData6;
 	for (i = 0; i < result.length; i++){
 		
-		var midpointAB = midPoint(sceneData[i][1], sceneData[i][2]);
-		var midpointBC = midPoint(sceneData[i][2], sceneData[i][3]);
+		//gets midpoint of 2 edges of the face
+		var midpointAB = midPoint(sceneData6[i][1], sceneData6[i][2]);
+		var midpointBC = midPoint(sceneData6[i][2], sceneData6[i][3]);
 		
-		var edge2vector = [sceneData[i][2][0] - sceneData[i][0][0], sceneData[i][2][1] - sceneData[i][0][1], sceneData[i][2][2] - sceneData[i][0][2]];
-		var edge1vector = [sceneData[i][1][0] - sceneData[i][0][0], sceneData[i][1][1] - sceneData[i][0][1], sceneData[i][1][2] - sceneData[i][0][2]];
+		//gets vector of two edges of face assuming vertex 1 is at origin
+		var edgeBCvector = [sceneData6[i][2][0] - sceneData6[i][0][0], sceneData6[i][2][1] - sceneData6[i][0][1], sceneData6[i][2][2] - sceneData6[i][0][2]];
+		var edgeABvector = [sceneData6[i][1][0] - sceneData6[i][0][0], sceneData6[i][1][1] - sceneData6[i][0][1], sceneData6[i][1][2] - sceneData6[i][0][2]];
 		
-		var peroendicularBisector1 = crossProduct(crossProduct(edge2vector, edge1vector);
+		//gets vector of perpendicular bisector
+		var peroendicularBisectorAB = crossProduct(edgeABvector, crossProduct(edgeBCvector, edgeABvector));
+		var peroendicularBisectorBC = crossProduct(crossProduct(edgeBCvector, edgeABvector), edgeBCvector);
+		
+		//adds midpoints AB and BC to peroendicularBisectorAB and peroendicularBisectorBC respectively
+		for (x = 0; x < 3; x++){
+                        peroendicularBisectorAB[x]+=midpointAB[x];
+		}
+		for (x = 0; x < 3; x++){
+                        peroendicularBisectorBC[x]+=midpointBC[x];
+		}
                 result[i][6] = ;
 	}
 }
