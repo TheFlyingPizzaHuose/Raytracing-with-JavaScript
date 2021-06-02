@@ -140,13 +140,8 @@ function calcIncSphere(sceneData6){
 		var peroendicularBisectorAB = crossProduct(edgeABvector, crossProduct(edgeBCvector, edgeABvector));
 		var peroendicularBisectorBC = crossProduct(crossProduct(edgeBCvector, edgeABvector), edgeBCvector);
 		
-		//adds midpoints AB and BC to peroendicularBisectorAB and peroendicularBisectorBC respectively
-		for (x = 0; x < 3; x++){
-                        peroendicularBisectorAB[x]+=midpointAB[x];
-		}
-		for (x = 0; x < 3; x++){
-                        peroendicularBisectorBC[x]+=midpointBC[x];
-		}
+		//solves intersection of the two lines
+		
                 result[i][6] = ;
 	}
 }
