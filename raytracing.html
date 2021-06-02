@@ -142,14 +142,14 @@ function calcIncSphere(sceneData6){
 		
 		//constans for sytem of equations
 		var contsA = midpointAB[0] - midpointBC[0];
-		var contsB = midpointAB[1] - midpointBC[2];
+		var contsB = midpointAB[1] - midpointBC[1];
 		
 		//Determinands
 		var D = perpendicularBisectorBC[0]*perpendicularBisectorAB[1] - perpendicularBisectorAB[0]*perpendicularBisectorBC[1];
-		var DX = contsA*perpendicularBisectorAB[1] - contsB*perpendicularBisectorAB[0];
+		var DJ = contsB*perpendicularBisectorBC[0] - contsA*perpendicularBisectorBC[1];
 		
 		//solved unknowns in system
-		var d1 = D/DX;
+		var d1 = D/DJ;
 		
 		//Intersection coordinates
 		var I = midpointAB[0] + perpendicularBisectorAB[0]*d1;
