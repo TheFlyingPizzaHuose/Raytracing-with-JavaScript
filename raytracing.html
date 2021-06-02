@@ -84,18 +84,13 @@ function fastSinCos(angle, mode){
 	return result;
 }
 
-//calculates determinandt
-function det(matrixV4){
-	var result = matrix[0]*matrix[3] - matrix[1]*matrix[2];
+//calculate crpssProduct
+function crossProduct(matrixV31, matrixV32){
+	var cX = matrixV31[1]*matrixV32[2] - matrixV31[2]*matrixV32[1];
+	var cY = matrixV31[2]*matrixV32[0] - matrixV31[0]*matrixV32[2];
+	var cZ = matrixV31[0]*matrixV32[1] - matrixV31[1]*matrixV32[0];
+	var result = [cX,cY,cZ];
 	return result;
-}
-
-//calculate crossProduct(matrixV31, matrixV32){
-	var result = [];
-	var M1 = [matrixV31[1], matrixV32[1], matrixV31[2], matrixV32[2]];
-	var M2 = [matrixV31[2], matrixV32[2], matrixV31[0], matrixV32[0]];
-	var M3 = [matrixV31[0], matrixV32[0], matrixV31[1], matrixV32[1]];
-	result = [Math.abs(det(M1)), Math.abs(det(M2)), Math.abs(det(M3))];
 }
 
 //gets distance of two points
