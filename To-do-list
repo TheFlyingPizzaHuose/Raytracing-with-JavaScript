@@ -1,10 +1,11 @@
-1. Create ray-face intersection fuction
+1. Create face to sphere function
  a Find equidistant point between the three points of a face
  b Generate sphere with radius of midpoint distance from face point and center located at midpoint
  c Repeat "a" and "b" for every face in scene
- d Check for intersection of ray with spheres using ray marching
- e Which ever sphere is intersected by the ray, calculate if ray intersects with the sphere's corresponding face.
- f If not repeat "d" until "f" is finished
+1. Create ray-face intersection fuction
+ a Check for intersection of ray with spheres using ray marching
+ b Which ever sphere is intersected by the ray, calculate if ray intersects with the sphere's corresponding face.
+ c If not repeat "d" until "f" is finished
  g If ray intersects with face, proceed to step 2
 2. Create ray bounce function
 3. Create keypress-to-movement function
