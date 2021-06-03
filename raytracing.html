@@ -141,32 +141,32 @@ function calcSOI(sceneData2){
 	for (i = 0; i < result.length; i++){
 		
 		//gets midpoint of 2 edges of the face
-		var midpointAB = midPoint(sceneData2[i][1], sceneData2[i][2]);
-		var midpointBC = midPoint(sceneData2[i][2], sceneData2[i][3]);
+		var midAB = midPoint(sceneData2[i][1], sceneData2[i][2]);
+		var midBC = midPoint(sceneData2[i][2], sceneData2[i][3]);
 		
 		//gets vector of two edges of face assuming vertex 1 is at origin
 		var edgeBCvector = [sceneData2[i][2][0] - sceneData2[i][0][0], sceneData2[i][2][1] - sceneData2[i][0][1], sceneData2[i][2][2] - sceneData2[i][0][2]];
 		var edgeABvector = [sceneData2[i][1][0] - sceneData2[i][0][0], sceneData2[i][1][1] - sceneData2[i][0][1], sceneData2[i][1][2] - sceneData2[i][0][2]];
 		
 		//gets vector of perpendicular bisector
-		var perpendicularBisectorAB = crossProduct(edgeABvector, crossProduct(edgeBCvector, edgeABvector));
-		var perpendicularBisectorBC = crossProduct(crossProduct(edgeBCvector, edgeABvector), edgeBCvector);
+		var perBiAB = crossProduct(edgeABvector, crossProduct(edgeBCvector, edgeABvector));
+		var perBiBC = crossProduct(crossProduct(edgeBCvector, edgeABvector), edgeBCvector);
 		
 		//constans for sytem of equations
-		var contsA = midpointAB[0] - midpointBC[0];
-		var contsB = midpointAB[1] - midpointBC[1];
+		var contsA = midAB[0] - midBC[0];
+		var contsB = midAB[1] - midBC[1];
 		
 		//Determinands
-		var D = perpendicularBisectorBC[0]*perpendicularBisectorAB[1] - perpendicularBisectorAB[0]*perpendicularBisectorBC[1];
-		var DJ = contsB*perpendicularBisectorBC[0] - contsA*perpendicularBisectorBC[1];
+		var D = perBiBC[0]*perBiAB[1] - perBiAB[0]*perBiBC[1];
+		var DJ = contsB*perBiBC[0] - contsA*perBiBC[1];
 		
 		//solved unknowns in system
 		var d1 = D/DJ;
 		
 		//Intersection position
-		var I = midpointAB[0] + perpendicularBisectorAB[0]*d1;
-		var J = midpointAB[1] + perpendicularBisectorAB[1]*d1;
-		var K = midpointAB[2] + perpendicularBisectorAB[2]*d1;
+		var I = midAB[0] + perBiAB[0]*d1;
+		var J = midAB[1] + perBiAB[1]*d1;
+		var K = midAB[2] + perBiAB[2]*d1;
 		
 		//Sphere radius
 		var R = vectorDistance([I, J, K], sceneData2[i][1]);
