@@ -115,6 +115,12 @@ function calcNormals(sceneData2){
 		for(x = 0; x < 3; x++){
                         temp[x]-=result[i][1][x];
 		}
+		
+		//reduces normal vector to magnitude 1
+		var magnitude = vectorDistance(temp, [0, 0, 0]);
+		for(x = 0; x < 3; x++){
+                        temp[x]*=(temp[x]/magnitude);
+		}
 		result[i][4] = temp;
 	}
 	return result;
@@ -179,7 +185,7 @@ function vector3To2(vector1, vector2){
 	var Zdistance= vector1[2] - vector2[2];
 
 	//converts to 2d
-	var result = [fastAtan(Ydistance/Xdistance), fastAtan(Zdistance/XYdistance)];
+	var result = [fastAtan(Ydistance/Xdistance), fastAtan(Zdistance/XYdistance), 0];
 	return result;
 }
 
@@ -194,7 +200,7 @@ function raySOIitc(vector1, vector2, sceneData2){
 	//checks each face
 	var result = [];
 	for (i = 0; i < sceneData2.length; i++){
-                if(){
+                if(vectorDistance(vector3To2(vector1, vector2), vector3To2(vector1, sceneData[i][6])) < distanceScale(vector1, sceneData2[i][6], sceneData2[i][6][3])){
                         result.push(i);
 		}    
 	}
