@@ -85,10 +85,10 @@ function fastSinCos(angle, mode){
 }
 
 //calculate crpssProduct
-function crossProduct(matrixV31, matrixV32){
-	var cX = matrixV31[1]*matrixV32[2] - matrixV31[2]*matrixV32[1];
-	var cY = matrixV31[2]*matrixV32[0] - matrixV31[0]*matrixV32[2];
-	var cZ = matrixV31[0]*matrixV32[1] - matrixV31[1]*matrixV32[0];
+function crossProduct(vector1, vector2){
+	var cX = vector1[1]*vector2[2] - vector1[2]*vector2[1];
+	var cY = vector1[2]*vector2[0] - vector1[0]*vector2[2];
+	var cZ = vector1[0]*vector2[1] - vector1[1]*vector2[0];
 	var result = [cX,cY,cZ];
 	return result;
 }
@@ -106,8 +106,8 @@ function parseOBJ(file){
 }
 
 //calculate normals
-function calcNormals(sceneData5){
-	var result = sceneData5;
+function calcNormals(sceneData2){
+	var result = sceneData2;
 	for(i = 0; i < result.length; i++){
 		var temp = crossProduct(result[i][1], result[i][2]);
 		
@@ -121,26 +121,26 @@ function calcNormals(sceneData5){
 }
 
 //calculate midpoint of two vertecies
-function midPoint(vertex1, vertex2){
+function midPoint(vector1, vector2){
 	var result = [];
         for (i = 0; i < 3; i++){
-                result[i] = (vertex1[i]-vertex2[i])/2
+                result[i] = (vector1[i]-vector2[i])/2
 	}
 	return result;
 }
 	
-//calculate intersection spheres of each face
-function calcIncSphere(sceneData6){
-        var result = sceneData6;
+//calculate sphere of influence of each face
+function calcSOI(sceneData2){
+        var result = sceneData2;
 	for (i = 0; i < result.length; i++){
 		
 		//gets midpoint of 2 edges of the face
-		var midpointAB = midPoint(sceneData6[i][1], sceneData6[i][2]);
-		var midpointBC = midPoint(sceneData6[i][2], sceneData6[i][3]);
+		var midpointAB = midPoint(sceneData2[i][1], sceneData2[i][2]);
+		var midpointBC = midPoint(sceneData2[i][2], sceneData2[i][3]);
 		
 		//gets vector of two edges of face assuming vertex 1 is at origin
-		var edgeBCvector = [sceneData6[i][2][0] - sceneData6[i][0][0], sceneData6[i][2][1] - sceneData6[i][0][1], sceneData6[i][2][2] - sceneData6[i][0][2]];
-		var edgeABvector = [sceneData6[i][1][0] - sceneData6[i][0][0], sceneData6[i][1][1] - sceneData6[i][0][1], sceneData6[i][1][2] - sceneData6[i][0][2]];
+		var edgeBCvector = [sceneData2[i][2][0] - sceneData2[i][0][0], sceneData2[i][2][1] - sceneData2[i][0][1], sceneData2[i][2][2] - sceneData2[i][0][2]];
+		var edgeABvector = [sceneData2[i][1][0] - sceneData2[i][0][0], sceneData2[i][1][1] - sceneData2[i][0][1], sceneData2[i][1][2] - sceneData2[i][0][2]];
 		
 		//gets vector of perpendicular bisector
 		var perpendicularBisectorAB = crossProduct(edgeABvector, crossProduct(edgeBCvector, edgeABvector));
@@ -157,15 +157,46 @@ function calcIncSphere(sceneData6){
 		//solved unknowns in system
 		var d1 = D/DJ;
 		
-		//Intersection coordinates
+		//Intersection position
 		var I = midpointAB[0] + perpendicularBisectorAB[0]*d1;
 		var J = midpointAB[1] + perpendicularBisectorAB[1]*d1;
 		var K = midpointAB[2] + perpendicularBisectorAB[2]*d1;
 		
 		//Sphere radius
-		var R = vectorDistance([I, J, K], sceneData6[i][1]);
+		var R = vectorDistance([I, J, K], sceneData2[i][1]);
 		
                 result[i][6] = [I, J, K, R];
+	}
+}
+	
+//convert 3d to 2d vectors
+function vector3To2(vector1, vector2){
+	
+	//gets distances per axis of the vectors
+        var Xdistance = vector1[0] - vector2[0];
+	var Ydistance = vector1[1] - vector2[1];
+	var XYdistance = vectorDistance([vector1[0], vector1[1], 0], [vector2[0], vector2[1], 0]);
+	var Zdistance= vector1[2] - vector2[2];
+
+	//converts to 2d
+	var result = [fastAtan(Ydistance/Xdistance), fastAtan(Zdistance/XYdistance)];
+	return result;
+}
+
+//calculate apparent size based on distance
+function distanceScale(vector1, vector2, scale){
+	var distance = vectorDistance(vector1, vector2);
+	var result = scale/(2 * Math.PI * didtance) * 360;
+}
+	
+//check if ray intersects with face sphere of influence
+function raySOIitc(vector1, vector2, sceneData2){
+	//checks each face
+	var result = [];
+	for (i = 0; i < sceneData2.length; i++){
+                if(){
+                        result.push(i);
+		}    
 	}
 }
 
@@ -173,10 +204,10 @@ function calcIncSphere(sceneData6){
 function render(sceneData2, cameraDirectionV32, resolutionX2, resolutionY2, fov5, cameraV33){
 
 	if (updateScene == True){
-	    //calculates normals
-	    var sceneData3 = calcNormals(sceneData2);
-            //calculates intersection spheres
-	    var sceneData3 = calcIncSphere(sceneData3);
+	        //calculates normals
+	        var sceneData3 = calcNormals(sceneData2);
+                //calculates intersection spheres
+	        var sceneData3 = calcSOI(sceneData3);
 	}
 
 	//creates image data
@@ -193,7 +224,7 @@ var cosTable = tempMain[1];
 var tanTable = tempMain[2];
 
 //temporary variable assignments
-var sceneData = []; //each element is an array with 7 elements [colorHEX, vertex1, vertex2, vertex3, normal, intersectionSphere, roughness]
+var sceneData = []; //each element is an array with 7 elements [colorHEX, vertex1, vertex2, vertex3, normal, sphereOfInfluence, roughness]
 var cameraDirectionV3 = [];
 var cameraV3 = [0, 0, 0];
 var fov = 0;
