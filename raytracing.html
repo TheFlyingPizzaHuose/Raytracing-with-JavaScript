@@ -240,7 +240,7 @@ function reflectRay(vector1, vector2){
 }
 	
 //check if ray intersects with face
-function rayFaceItc(vector1, vector2, faceData)[
+function rayFaceItc(vector1, vector2, faceData){
 	var result = False;
 	return result;
 }
@@ -278,21 +278,31 @@ function rayTrace(sceneData5, resolutionX, resolutionY, cameraLocation2, cameraV
 				var incSOI = raySOIitc(rayLocation, rayVector ,sceneData);
 				
 				//checks if ray did indded get a bounce
-				var bounced = False
+				var bounced = False;
 				
 				//checks each SOI for face intersection
 				for(y = 0; y < incSOI.length; y++){
 					if(rayFaceItc(rayLocation, rayVector, sceneData5[incSOI[y]])){
 						//reflects ray
-						rayVector = reflectRay(rayVector, sceneData[incSOI[y]][6]);
+						rayVector = reflectRay(rayVector, sceneData[incSOI[y]][4]);
 						
 						//gets new ray origin
-						rayLocation = rayBounceLocation(rayLocation, rayVector, sceneData5[incSOI]);
+						rayLocation = rayBounceLocation(rayLocation, rayVector, sceneData5[incSOI[y]]);
+						
+						//changes ray color                                                face number|face color|face color "R"
+						result[(i + (x * resolutionX))*4    ] = (result[(i + (x * resolutionX))*4] + sceneData5[incSOI[y]][0][0])/(y+1);
+						result[(i + (x * resolutionX))*4 + 1] = (result[(i + (x * resolutionX))*4] + sceneData5[incSOI[y]][0][1])/(y+1);
+						result[(i + (x * resolutionX))*4 + 2] = (result[(i + (x * resolutionX))*4] + sceneData5[incSOI[y]][0][2])/(y+1);
+						result[(i + (x * resolutionX))*4 + 3] = 255;
 					}
 				}
 				
 				if(!bounced){
-					//set color to black WIP
+					result[(i + (x * resolutionX))*4]     = result[(i + (x * resolutionX))*4]/(y+1);
+					result[(i + (x * resolutionX))*4 + 1] = result[(i + (x * resolutionX))*4]/(y+1);
+					result[(i + (x * resolutionX))*4 + 2] = result[(i + (x * resolutionX))*4]/(y+1);
+					result[(i + (x * resolutionX))*4 + 3] = 255;
+					break;
 				}
 			}
 		}
@@ -311,7 +321,7 @@ function render(sceneData2, cameraLocation3, resolutionX2, resolutionY2, fov5, c
 	}
 
 	//creates image data
-	var imageData = rayTrace(sceneData3, resolutionX2, resolutionY2, ,cameraLocation3, cameraVector3, fov5, 4);
+	var imageData = rayTrace(sceneData3, resolutionX2, resolutionY2 ,cameraLocation3, cameraVector3, fov5, 4);
 
 	//draws image
 	display(imageData);
@@ -324,7 +334,7 @@ var cosTable = tempMain[1];
 var tanTable = tempMain[2];
 
 //temporary variable assignments
-var sceneData = []; //each element is an array with 7 elements [colorHEX, vertex1, vertex2, vertex3, normal, sphereOfInfluence, roughness]
+var sceneData = []; //each element is an array with 7 elements [[R, G, B], vertex1, vertex2, vertex3, normal, sphereOfInfluence, roughness]
 var cameraVector = [0, 0, 0];
 var cameraLocation = [0, 0, 0];
 var fov = 0;
