@@ -6,6 +6,8 @@
 <canvas id="screen" width="720" height="404" style="border:1px solid #000000;">
 Your browser does not support the HTML canvas tag.
 </canvas>
+	
+<p id="debug"></p>
 
 <script>
 
@@ -311,13 +313,24 @@ function rayTrace(sceneData5, resolutionX, resolutionY, cameraLocation2, cameraV
 }
 
 //render method
-function render(sceneData2, cameraLocation3, resolutionX2, resolutionY2, fov5, cameraVector3){
-
-	if (updateScene == True){
+function render(sceneData2, cameraLocation3, resolutionX2, resolutionY2, fov5, cameraVector3){	
+	
+	var updateScene = 0;
+	
+	//checks for keypresses (Yes I know it's not necesarily supposed to be in a "render" method but eh)
+	if (False/*Temporary*/){
+		updateScene =  1;
+	}
+	
+	if (updateScene == 1){
 	        //calculates normals
 	        var sceneData3 = calcNormals(sceneData2);
                 //calculates intersection spheres
 	        var sceneData3 = calcSOI(sceneData3);
+		
+		//resets "updateScene"
+		updateScene = 0;
+		document.getElementById(1).innerHTML = updateScene;
 	}
 
 	//creates image data
@@ -338,6 +351,12 @@ var sceneData = []; //each element is an array with 7 elements [[R, G, B], verte
 var cameraVector = [0, 0, 0];
 var cameraLocation = [0, 0, 0];
 var fov = 0;
+	
+//initial calculation of normals and intesection spheres
+//calculates normals
+var sceneData = calcNormals(sceneData);
+//calculates intersection spheres
+var sceneData = calcSOI(sceneData);
 
 setInterval(render(sceneData, cameraLocation, c.width, c.height, fov, cameraVector), 1);
 
