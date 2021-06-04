@@ -83,8 +83,8 @@ function fastSinCos(angle, mode){
 	}
 	return result;
 }
-
-//calculate crpssProduct
+	
+//calculate crossProduct
 function crossProduct(vector1, vector2){
 	var cX = vector1[1]*vector2[2] - vector1[2]*vector2[1];
 	var cY = vector1[2]*vector2[0] - vector1[0]*vector2[2];
@@ -92,6 +92,14 @@ function crossProduct(vector1, vector2){
 	var result = [cX,cY,cZ];
 	return result;
 }
+	
+//3 by 3 determinand
+function det3By3(matrix){
+	var detA = matrix[4]*matrix[8] - matrix[7]*matrix[5];
+	var detB = matrix[3]* matrix[8] - matrix[6]* matrix[5];
+	var detC = matrix[3], matrix[7], matrix[6], matrix[4];
+	var result = matrix[0]*detA - matrix[1]*detB + matrix[2]*detC;
+	return result;
 
 //gets distance of two points
 function vectorDistance(point1, point2){
@@ -114,12 +122,6 @@ function calcNormals(sceneData2){
 		//makes normal direction vector instead of positional
 		for(x = 0; x < 3; x++){
                         temp[x]-=result[i][1][x];
-		}
-		
-		//reduces normal vector to magnitude 1
-		var magnitude = vectorDistance(temp, [0, 0, 0]);
-		for(x = 0; x < 3; x++){
-                        temp[x]*=(temp[x]/magnitude);
 		}
 		result[i][4] = temp;
 	}
@@ -204,6 +206,18 @@ function raySOIitc(vector1, vector2, sceneData2){
                         result.push(i);
 		}    
 	}
+	return result;
+}
+	
+//calculate reflection normal
+function reflectRay(vector1, vector2){
+	var normal = crossProduct(vector1, vector2);
+	var D = det3By3([0, vector2[2], -vector2[1], -vector2[2], 0, vector2[0], vector2[1], -vector2[0], 0]);
+	var DX = det3By3([normal[0], vector2[2], -vector2[1], normal[0], 0, vector2[0], normal[0], -vector2[0], 0]);
+	var DY = det3By3([0, normal[1], -vector2[1], -vector2[2], normal[1], vector2[0], vector2[1], normal[1], 0]);
+	var DZ = det3By3([0, vector2[2], normal[2], -vector2[2], 0, normal[2], vector2[1], -vector2[0], normal[2]]);
+	var result = [D/DX, D/DY, D/DZ];
+	return result;
 }
 
 //render method
