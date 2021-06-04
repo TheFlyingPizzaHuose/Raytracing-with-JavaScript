@@ -79,9 +79,9 @@ function fastAtan(fraction){
 //fast sine/cosine method
 function fastSinCos(angle, mode){
 	if(mode == 1){
-		var result = table[parseInt(angle/(360/sinTable.legnth))];
+		var result = sinTable[parseInt(angle/(360/sinTable.legnth))];
 	} else if (mode == 2){
-		var result  = table[parseInt(angle/(360/cosTable.legnth))];
+		var result  = cosTable[parseInt(angle/(360/cosTable.legnth))];
 	}
 	return result;
 }
