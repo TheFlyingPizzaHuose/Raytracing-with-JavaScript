@@ -96,8 +96,8 @@ function crossProduct(vector1, vector2){
 //3 by 3 determinand
 function det3By3(matrix){
 	var detA = matrix[4]*matrix[8] - matrix[7]*matrix[5];
-	var detB = matrix[3]* matrix[8] - matrix[6]* matrix[5];
-	var detC = matrix[3], matrix[7], matrix[6], matrix[4];
+	var detB = matrix[3]*matrix[8] - matrix[6]*matrix[5];
+	var detC = matrix[3]*matrix[7] - matrix[6]*matrix[4];
 	var result = matrix[0]*detA - matrix[1]*detB + matrix[2]*detC;
 	return result;
 
