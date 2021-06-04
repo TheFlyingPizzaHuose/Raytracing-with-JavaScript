@@ -100,6 +100,7 @@ function det3By3(matrix){
 	var detC = matrix[3]*matrix[7] - matrix[6]*matrix[4];
 	var result = matrix[0]*detA - matrix[1]*detB + matrix[2]*detC;
 	return result;
+}
 
 //gets distance of two points
 function vectorDistance(point1, point2){
@@ -200,11 +201,29 @@ function distanceScale(vector1, vector2, scale){
 //check if ray intersects with face sphere of influence
 function raySOIitc(vector1, vector2, sceneData2){
 	//checks each face
+	var temp = [];
 	var result = [];
 	for (i = 0; i < sceneData2.length; i++){
                 if(vectorDistance(vector3To2(vector1, vector2), vector3To2(vector1, sceneData[i][6])) < distanceScale(vector1, sceneData2[i][6], sceneData2[i][6][3])){
-                        result.push(i);
-		}    
+			//                                                                          reminder to author this "3" is 4th element of itc sphere info^^^
+                        result.push([vectorDistance(vector1, sceneData2[i][6]), i]);
+			
+			//sorts by distance from ray origin
+			result.sort(sortFunction);
+			function sortFunction(a, b) {
+			    if (a[0] === b[0]) {
+				return 0;
+			    }
+			    else {
+				return (a[0] < b[0]) ? -1 : 1;
+			    }
+			}
+		}
+	}
+	
+	//removes distance from result
+	for (i = 0; i < result.length; i++){
+		result[i] = result[i][1];
 	}
 	return result;
 }
@@ -219,9 +238,70 @@ function reflectRay(vector1, vector2){
 	var result = [D/DX, D/DY, D/DZ];
 	return result;
 }
+	
+//check if ray intersects with face
+function rayFaceItc(vector1, vector2, faceData)[
+	var result = False;
+	return result;
+}
+
+//calculates bounce location of ray
+function rayBounceLoc(vector1, vector2, faceData){
+	var result = [0, 0, 0];
+	return result;
+}
+
+function rayTrace(sceneData5, resolutionX, resolutionY, cameraLocation2, cameraVector2, fov, bounces){
+	var result = [];
+	var rayVector = [];
+	var rayLocation = []; 
+	
+	//sets ray x degrees
+	for(i = 1; i <= resolutionX; i++){
+		var temp = [];
+		temp[0] = (i - (resolutionX / 2)) / resolutionX * fov + cameraVector[0];
+		
+		//set ray y degrees
+		for(x = 1; x <= resolutionY; x++){
+			temp[1] = ((resolutionY / 2) - i) / resolutionX * fov + cameraVector[1];
+			
+			//sets ray begining to camera
+			rayLocation = cameraLocation2;
+			
+			//converts ray degrees to 3d vector
+			rayVector = [fastSinCos(temp[0], 2), fastSinCos(temp[0], 1), fastSinCos(temp[1], 1)];
+			
+			//bounces x amount of times
+			for(w = 0; w < bounces; w++){
+				
+				//performs ray sphere intesection check
+				var incSOI = raySOIitc(rayLocation, rayVector ,sceneData);
+				
+				//checks if ray did indded get a bounce
+				var bounced = False
+				
+				//checks each SOI for face intersection
+				for(y = 0; y < incSOI.length; y++){
+					if(rayFaceItc(rayLocation, rayVector, sceneData5[incSOI[y]])){
+						//reflects ray
+						rayVector = reflectRay(rayVector, sceneData[incSOI[y]][6]);
+						
+						//gets new ray origin
+						rayLocation = rayBounceLocation(rayLocation, rayVector, sceneData5[incSOI]);
+					}
+				}
+				
+				if(!bounced){
+					//set color to black WIP
+				}
+			}
+		}
+	}
+	return result;
+}
 
 //render method
-function render(sceneData2, cameraDirectionV32, resolutionX2, resolutionY2, fov5, cameraV33){
+function render(sceneData2, cameraLocation3, resolutionX2, resolutionY2, fov5, cameraVector3){
 
 	if (updateScene == True){
 	        //calculates normals
@@ -231,7 +311,7 @@ function render(sceneData2, cameraDirectionV32, resolutionX2, resolutionY2, fov5
 	}
 
 	//creates image data
-	var imageData = rayTrace(sceneData3, 2, resolutionX2, resolutionY2, fov5);
+	var imageData = rayTrace(sceneData3, resolutionX2, resolutionY2, ,cameraLocation3, cameraVector3, fov5, 4);
 
 	//draws image
 	display(imageData);
@@ -245,11 +325,11 @@ var tanTable = tempMain[2];
 
 //temporary variable assignments
 var sceneData = []; //each element is an array with 7 elements [colorHEX, vertex1, vertex2, vertex3, normal, sphereOfInfluence, roughness]
-var cameraDirectionV3 = [];
-var cameraV3 = [0, 0, 0];
+var cameraVector = [0, 0, 0];
+var cameraLocation = [0, 0, 0];
 var fov = 0;
 
-setInterval(render(sceneData, cameraDirectionV3, c.width, c.height, fov, cameraV3), 1);
+setInterval(render(sceneData, cameraLocation, c.width, c.height, fov, cameraVector), 1);
 
 </script>
 </body>
