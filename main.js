@@ -277,7 +277,7 @@ function raytrace(bounces){
 				//checks if ray did indded get a bounce
 				var temp = rayTriITP(rayVector, rayLocation, sceneData, bvh);
 
-				lastWasItt = temp?true:false;
+				lastWasItt = (w==0 && temp)?true:false;
 				if(temp != false){
 					//updates ray info
 					var itpFace = sceneData[temp[4]][temp[3]];
