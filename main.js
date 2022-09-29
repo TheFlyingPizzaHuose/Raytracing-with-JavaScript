@@ -237,12 +237,19 @@ function raytrace(bounces){
 
 	cameraMove();
 	cameraRotate();
+	var lastWasItt = false;
+	var x,y;
 	//sets ray x degrees
 	for(var i=0; i<height*width; i++){
-		var foundRay = false
+		var foundRay = false;
+		if(lastWasItt){
+			x++
+			foundRay = true;
+			lastWasItt = false;
+		}
 		while(!foundRay){
-			var x = parseInt(Math.random()*width)
-			var y = parseInt(Math.random()*height)
+			x = parseInt(Math.random()*width)
+			y = parseInt(Math.random()*height)
 			var displayPosition = (x + (y * width))*4;
 			foundRay = traced[displayPosition/4]==0?true:false
 		}
@@ -268,6 +275,7 @@ function raytrace(bounces){
 				//checks if ray did indded get a bounce
 				var temp = rayTriITP(rayVector, rayLocation, sceneData, bvh);
 
+				lastWasItt = temp?true:false;
 				if(temp != false){
 					//updates ray info
 					var itpFace = sceneData[temp[4]][temp[3]];
