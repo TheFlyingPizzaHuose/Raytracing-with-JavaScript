@@ -245,23 +245,30 @@ function raytrace(bounces){
 		var foundRay = false;
 		if(lastWasItt){
 			switch(parseInt(Math.random()*8)){
-
 				case 1:
 					x,y = 1,-1;
+					break;
 				case 2:
 					x,y = 1,0;
+					break;
 				case 3:
 					x,y = 1,1;
+					break;
 				case 4:
 					x,y = 0,1;
+					break;
 				case 5:
 					x,y = 0,-1;
+					break;
 				case 6:
 					x,y = -1,-1;
+					break;
 				case 7:
 					x,y = -1,0;
+					break;
 				case 8:
 					x,y = -1,1;
+					break;
 			}
 			foundRay = true;
 			lastWasItt = false;
