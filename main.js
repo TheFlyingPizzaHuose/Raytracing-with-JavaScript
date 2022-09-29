@@ -246,28 +246,32 @@ function raytrace(bounces){
 		if(lastWasItt){
 			switch(parseInt(Math.random()*8)){
 				case 1:
-					x,y = 1,-1;
+					x++
+					y--
 					break;
 				case 2:
-					x,y = 1,0;
+					x++
 					break;
 				case 3:
-					x,y = 1,1;
+					x++
+					y++
 					break;
 				case 4:
-					x,y = 0,1;
+					y++
 					break;
 				case 5:
-					x,y = 0,-1;
+					y--
 					break;
 				case 6:
-					x,y = -1,-1;
+					x--
+					y--
 					break;
 				case 7:
-					x,y = -1,0;
+					x--
 					break;
 				case 8:
-					x,y = -1,1;
+					x--
+					y++
 					break;
 			}
 			foundRay = true;
