@@ -244,7 +244,7 @@ function raytrace(bounces){
 	for(var i=0; i<height*width; i++){
 		var foundRay = false;
 		if(lastWasItt){
-			x+= Math.random() > 0.5?-1:1;
+			x+= Math.random() > 0.5?-1:(Math.random() > 0.5?1:0);
 			y+= Math.random() > 0.5?-1:1;
 			foundRay = true;
 			lastWasItt = false;
