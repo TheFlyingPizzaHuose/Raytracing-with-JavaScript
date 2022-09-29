@@ -244,8 +244,25 @@ function raytrace(bounces){
 	for(var i=0; i<height*width; i++){
 		var foundRay = false;
 		if(lastWasItt){
-			x+= Math.random() > 0.33?-1:(Math.random() > 0.5?1:0);
-			y+= Math.random() > 0.5?-1:1;
+			switch(parseInt(Math.random()*8)){
+
+				case 1:
+					x,y = 1,-1;
+				case 2:
+					x,y = 1,0;
+				case 3:
+					x,y = 1,1;
+				case 4:
+					x,y = 0,1;
+				case 5:
+					x,y = 0,-1;
+				case 6:
+					x,y = -1,-1;
+				case 7:
+					x,y = -1,0;
+				case 8:
+					x,y = -1,1;
+			}
 			foundRay = true;
 			lastWasItt = false;
 			displayPosition = (x + (y * width))*4;
