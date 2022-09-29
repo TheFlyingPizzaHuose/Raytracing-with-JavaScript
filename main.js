@@ -239,6 +239,7 @@ function raytrace(bounces){
 	cameraRotate();
 	var lastWasItt = false;
 	var x,y;
+	var displayPosition;
 	//sets ray x degrees
 	for(var i=0; i<height*width; i++){
 		var foundRay = false;
@@ -246,11 +247,12 @@ function raytrace(bounces){
 			x++
 			foundRay = true;
 			lastWasItt = false;
+			displayPosition = (x + (y * width))*4;
 		}
 		while(!foundRay){
 			x = parseInt(Math.random()*width)
 			y = parseInt(Math.random()*height)
-			var displayPosition = (x + (y * width))*4;
+			displayPosition = (x + (y * width))*4;
 			foundRay = traced[displayPosition/4]==0?true:false
 		}
 		if(timeSinceLastFrame<frameCap){
