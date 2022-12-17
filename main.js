@@ -1,10 +1,10 @@
 import {face} from './js/classes.js';
 import {reflectRay, rayTriITP, fresCol} from './js/raytracing.js';
-import {degToArc, vectorAdd, vectorScalar, xyToIndex, arrayEqual} from './js/math.js'
+import {degToArc, vectorAdd, vectorScalar, xyToIndex, arrayEqual, vectorSubtract} from './js/math.js'
 import * as objParse from './obj-file-parser/dist/OBJFile.js';
 
 var debugMode = false;
-var frameCap = 1000/24
+var frameCap = 1000/30
 //create canvas objects
 var ctx = document.getElementById("screen");
 var c = ctx.getContext("2d");
@@ -16,21 +16,25 @@ var height = ctx.height;
 let test = [new face(1, [255,0,0], [-0.706398,6.57358,-0.210624],[0.962642,5.67513,-0.015534],[0.376032,4.96034,-0.405714])];
 let test2 = [new face(1, [0,0,255], [0.265035,4.27993,0.463644],[0.503704,5.77224,-0.772596],[-0.141839,6.06564,-0.062336])];
 //Debug variables
-var frameCounter=0,timeSinceLastFrame=0,vertexCount=0,hasErr=false,countsSinceLastErr=0,showDebug=true, frameTimeGraph=[];
+var raySinceFrame = 0,timeSinceLastFrame=0,hasErr=false,countsSinceLastErr=0,showDebug=true, frameTimeGraph=[];
 
-var sceneData = [test, test2]; 
-var bvh = [test, test2];
+var sceneData = []; 
+var bvh = [];
 var cameraPer=[1,0,0],cameraVector3=[0,1,0],cameraVer=[0,0,-1];
 var cameraLocation = [0, 0, 0];
 var fov = 70;
-var fovRation = Math.sin(degToArc(fov))
-var imported = ["test1 (0), ", "test2 (1), ", ];
+var fovRation = Math.sin(degToArc(fov));
 
 var result1 = new Array(width*height*4).fill(0)
 var result2 = new Uint8ClampedArray(new Array(width*height*4).fill(0))
 var traced = new Array(width*height).fill(0)
 
-selfImport({file: './models/RaytracingJS.obj', color: [0,255,0]})
+for(var i = 0; i<10;i++){
+	var temp = [Math.random()*2-1,Math.random()*2-1,Math.random()*2-1];
+	selfImport({file: './models/RaytracingJS.obj', 
+				color: [Math.random()*255,Math.random()*255,Math.random()*255],
+				offset: temp});
+}
 selfImport({file: './models/RaytracingJS2.obj', color: [255,255,0]})
 
 //Different browser settings
@@ -229,64 +233,29 @@ function fillScreen(R, G, B){
 function raytrace(bounces){
 	if (moving){
 		result2 = new Uint8ClampedArray(new Array(width*height*4).fill(0))
+		traced = new Array(width*height).fill(0)
 		moving = false
-		console.log('moving')
 	}
 	result1 = new Array(width*height*4).fill(0)
-	traced = new Array(width*height).fill(0)
 
 	cameraMove();
 	cameraRotate();
-	var lastWasItt = false;
-	var x,y;
-	var displayPosition;
 	//sets ray x degrees
-	for(var i=0; i<height*width; i++){
-		var foundRay = false;
-		if(lastWasItt){
-			switch(parseInt(Math.random()*8)){
-				case 1:
-					x++
-					y--
-					break;
-				case 2:
-					x++
-					break;
-				case 3:
-					x++
-					y++
-					break;
-				case 4:
-					y++
-					break;
-				case 5:
-					y--
-					break;
-				case 6:
-					x--
-					y--
-					break;
-				case 7:
-					x--
-					break;
-				case 8:
-					x--
-					y++
-					break;
-			}
-			foundRay = true;
-			lastWasItt = false;
-			displayPosition = (x + (y * width))*4;
-		}
-		while(!foundRay){
-			x = parseInt(Math.random()*width)
-			y = parseInt(Math.random()*height)
-			displayPosition = (x + (y * width))*4;
-			foundRay = traced[displayPosition/4]==0?true:false
+	for(i=0; i<height*width; i++){
+		var foundRay = false
+		var start = 1, end = 1000
+		while(!foundRay && timeSinceLastFrame<frameCap){
+			start = window.performance.now()
+			var x = parseInt(Math.random()*width)
+			var y = parseInt(Math.random()*height)
+			var displayPosition = (x + (y * width))*4;
+			foundRay = traced[displayPosition/4]==0?true:false;
+			end = window.performance.now()
+			timeSinceLastFrame+=end-start;
 		}
 		if(timeSinceLastFrame<frameCap){
 			traced[displayPosition/4]=1
-			var start = 1, end = 1000
+			raySinceFrame++;
 			start = window.performance.now()
 
 			//Sets begining state
@@ -306,9 +275,6 @@ function raytrace(bounces){
 				//checks if ray did indded get a bounce
 				var temp = rayTriITP(rayVector, rayLocation, sceneData, bvh);
 
-				if(w==0){
-				    lastWasItt = (temp != false)?true:false;
-				}
 				if(temp != false){
 					//updates ray info
 					var itpFace = sceneData[temp[4]][temp[3]];
@@ -335,15 +301,12 @@ function raytrace(bounces){
 			return
 		}
 	}
-
-
 	//draws image
 	display(result2);
 }
 
 //render timed
 function render(){
-	document.getElementById('importedObjects').textContent = "Imported OBJs: " + imported;
 	ctx.width = document.getElementById('resolutionX').value;
 	width = ctx.width;
 	ctx.height = document.getElementById('resolutionY').value;
@@ -353,7 +316,6 @@ function render(){
 	raytrace(12);
 	
 	dispTime()
-	frameCounter++;
 }
 
 //displays frametimes
@@ -380,6 +342,7 @@ function dispTime(){
 
 //gets framerate and displays
 function getFramerate(){
+	document.getElementById('Rayrate').textContent = 'Rayrate: ' + (raySinceFrame*1000/timeSinceLastFrame).toFixed(2) + ' '
 	if(!hasErr){
 		document.getElementById('Framerate').textContent = 'Framerate: ' + (1000/timeSinceLastFrame).toFixed(2) + ' '
 	}else{
@@ -392,6 +355,7 @@ function getFramerate(){
 		hasErr=false
 	}
 	timeSinceLastFrame = 0;
+	raySinceFrame = 0;
 }
 //###########################################Render functions###########################################
 //###########################################Camera Math###########################################
@@ -411,7 +375,7 @@ function cameraMove(){
 }
 //turns camera
 function cameraRotate(X=0, Y=0){
-	if(X>0 || Y>0 || tiltLeft || tiltRight){
+	if(X!=0 || Y!=0 || tiltLeft || tiltRight){
 		moving = true
 	}
 	//Perform roll
@@ -484,9 +448,9 @@ function selfImport(object, userMode=false)
 			})
 
 			//get vertex values
-			var ver1 = Object.values(content.vertices[indexes[0]-1]);
-			var ver2 = Object.values(content.vertices[indexes[1]-1]);
-			var ver3 = Object.values(content.vertices[indexes[2]-1]);
+			var ver1 = vectorAdd(Object.values(content.vertices[indexes[0]-1]),offset);
+			var ver2 = vectorAdd(Object.values(content.vertices[indexes[1]-1]),offset);
+			var ver3 = vectorAdd(Object.values(content.vertices[indexes[2]-1]),offset);
 
 
 			//add face to objectData
@@ -516,34 +480,10 @@ function selfImport(object, userMode=false)
 		})
 		sceneData.push(objectData);
 		//create bounding cube
-		/*
-		0: 1,1,1
-		1: 1,0,1
-		2: 1,0,0
-		3: 1,1,0
-		4: 0,1,1
-		5: 0,0,1
-		6: 0,0,0
-		7: 0,1,0
-		*/
-		var bvt = [upperCorner,
-				  [upperCorner[0],lowerCorner[1],upperCorner[2]],
-				  [upperCorner[0],lowerCorner[1],lowerCorner[2]],
-				  [upperCorner[0],upperCorner[1],lowerCorner[2]],
-				  [lowerCorner[0],upperCorner[1],upperCorner[2]],
-				  [lowerCorner[0],lowerCorner[1],upperCorner[2]],
-				  lowerCorner,
-				  [lowerCorner[0],upperCorner[1],lowerCorner[2]],];
-		bvh.push([new face(1, [255, 0, 0], bvt[0], bvt[1], bvt[3]),
-				  new face(1, [255, 0, 0], bvt[0], bvt[1], bvt[4]),
-				  new face(1, [255, 0, 0], bvt[0], bvt[3], bvt[4]),
-				  new face(1, [255, 0, 0], bvt[1], bvt[2], bvt[7]),
-				  new face(1, [255, 0, 0], bvt[1], bvt[7], bvt[5]),
-				  new face(1, [255, 0, 0], bvt[1], bvt[2], bvt[5])]);
+		var C = vectorScalar(vectorAdd(upperCorner, lowerCorner), 0.5); //bounding box center
+		bvh.push([C, upperCorner, lowerCorner]);
 		
 		//display that another object has been imported 
-		imported.push(content.name + "(" + imported.length + "), ");
-		document.getElementById('importedObjects').textContent = "Imported OBJs: " + imported;
 		console.log('import success');
 	});
 	fr.readAsText(allText);
