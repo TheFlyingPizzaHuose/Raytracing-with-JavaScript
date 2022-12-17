@@ -26,16 +26,44 @@ function rayTriITP(V1, P1, Data, BVH){
 
 	//check for BVH intersection
 	BVH.forEach((box, index)=>{
-		for(var i=0; i<box.length; i++){
-			V2 = box[i].e1;
-			V3 = box[i].e2;
-			P2 = box[i].v1;
-			ABC = cramerSolve(vectorSubtract(P2, P1), [V1[0],-V2[0], -V3[0], V1[1],-V2[1], -V3[1],V1[2],-V2[2], -V3[2]]);
-			/*check if intersection is present*/
-			if(0 <= ABC[1] && 0 <= ABC[2] && ABC[1] <= 1 && ABC[2] <= 1){
-				indexes.push(index);
-				break;
-			}
+		var upCor = box[1];
+		var lwCor = box[2];
+		var bx = lwCor[0], by = lwCor[1], bz = lwCor[2];
+		var ax = upCor[0], ay = upCor[1], az = upCor[2];
+
+		var m = V1[1]/V1[0];
+		var Rybx = P1[1] + m*(bx - P1[0]);
+		var Ryax = P1[1] + m*(ax - P1[0]);
+
+		m = V1[0]/V1[1];
+		var Rxby = P1[0] + m*(by - P1[1]);
+		var Rxay = P1[0] + m*(ay - P1[1]);
+
+		m = V1[2]/V1[0];
+		var Rzbx = P1[2] + m*(bx - P1[0]);
+		var Rzax = P1[2] + m*(ax - P1[0]);
+
+		m = V1[0]/V1[2];
+		var Rxbz = P1[0] + m*(bz - P1[2]);
+		var Rxaz = P1[0] + m*(az - P1[2]);
+		
+		m = V1[2]/V1[1];
+		var Rzby = P1[2] + m*(by - P1[1]);
+		var Rzay = P1[2] + m*(ay - P1[1]);
+
+		m = V1[1]/V1[2];
+		var Rybz = P1[1] + m*(bz - P1[2]);
+		var Ryaz = P1[1] + m*(az - P1[2]);
+
+		if(((bx <= Rxby && Rxby <= ax) || (bx <= Rxay && Rxay <= ax)||
+		   (by <= Rybx && Rybx <= ay) ||(by <= Ryax && Ryax <= ay))
+		   &&
+		   ((bx <= Rxbz && Rxbz <= ax) ||(bx <= Rxaz && Rxaz <= ax) ||
+		   (bz <= Rzbx && Rzbx <= az) ||(bz <= Rzax && Rzax <= az))
+		   &&
+		   ((by <= Rybz && Rybz <= ay) ||(by <= Ryaz && Ryaz <= ay) ||
+		   (bz <= Rzby && Rzby <= az) ||(bz <= Rzay && Rzay <= az))){
+			indexes.push(index);
 		}
 	})
 
