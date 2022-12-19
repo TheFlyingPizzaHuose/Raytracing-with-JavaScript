@@ -1,10 +1,13 @@
-import {face} from './js/classes.js';
-import {reflectRay, rayTriITP, fresCol} from './js/raytracing.js';
-import {degToArc, vectorAdd, vectorScalar, xyToIndex, arrayEqual, vectorSubtract} from './js/math.js'
+import {BBVH, face} from './js/classes.js';
+import {reflectRay, rayTriITP, fresCol, sceneXplor} from './js/raytracing.js';
+import {degToArc, vectorAdd, vectorScalar, xyToIndex, arrayEqual, vectorSubtract, vector3to2} from './js/math.js'
 import * as objParse from './obj-file-parser/dist/OBJFile.js';
+import {decode} from './jpeg-js-master/lib/decoder.js'
 
 var debugMode = false;
-var frameCap = 1000/30
+var ordered = true;
+var bounces = 5;
+var frameCap = 1000/24
 //create canvas objects
 var ctx = document.getElementById("screen");
 var c = ctx.getContext("2d");
@@ -12,30 +15,33 @@ var graph = document.getElementById('Frametime'),  graphc = document.getElementB
 var width = ctx.width;
 var height = ctx.height;
 
-//temporary variable assignments
-let test = [new face(1, [255,0,0], [-0.706398,6.57358,-0.210624],[0.962642,5.67513,-0.015534],[0.376032,4.96034,-0.405714])];
-let test2 = [new face(1, [0,0,255], [0.265035,4.27993,0.463644],[0.503704,5.77224,-0.772596],[-0.141839,6.06564,-0.062336])];
 //Debug variables
-var raySinceFrame = 0,timeSinceLastFrame=0,hasErr=false,countsSinceLastErr=0,showDebug=true, frameTimeGraph=[];
+var renderStart=0,raySinceFrame = 0,timeSinceLastFrame=0,hasErr=false,countsSinceLastErr=0,showDebug=true, frameTimeGraph=[];
+//Texture variables
+var textures=[],textCoords=[],texturesAlpha=[];
 
-var sceneData = []; 
-var bvh = [];
+var sceneData = [];
 var cameraPer=[1,0,0],cameraVector3=[0,1,0],cameraVer=[0,0,-1];
-var cameraLocation = [0, 0, 0];
+var cameraLocation = [0, -7, 1];
 var fov = 70;
 var fovRation = Math.sin(degToArc(fov));
 
-var result1 = new Array(width*height*4).fill(0)
+var empty = new Array(width*height*4).fill(0), result1 = empty;
 var result2 = new Uint8ClampedArray(new Array(width*height*4).fill(0))
-var traced = new Array(width*height).fill(0)
+var traced = new Array(width*height).fill(0), tracedNum = 0;
 
+importTexture('./textures/venice_sunset_8k.jpg', 0);
 for(var i = 0; i<10;i++){
-	var temp = [Math.random()*2-1,Math.random()*2-1,Math.random()*2-1];
-	selfImport({file: './models/RaytracingJS.obj', 
+	break;
+	var temp = [(Math.random()*5)-2.5,(Math.random()*5)-2.5,1];
+	selfImport({file: './models/Planet.obj', 
 				color: [Math.random()*255,Math.random()*255,Math.random()*255],
-				offset: temp});
+				offset: temp,
+				scale: 0.75});
 }
-selfImport({file: './models/RaytracingJS2.obj', color: [255,255,0]})
+selfImport({file: './models/RaytracingJS2.obj', color: [255,255,0], scale: 10, offset: [0,0,0]})
+selfImport({file: './models/dragon.obj', color: [255,255,255], scale: 0.2})
+//selfImport({file: './models/bunny.obj', color: [255,0,0], scale: 0.5})
 
 //Different browser settings
 if(/^((?!chrome|android).)*safari/i.test(navigator.userAgent)) {
@@ -84,6 +90,7 @@ if(/^((?!chrome|android).)*safari/i.test(navigator.userAgent)) {
 
 //Begins render
 setTimeout(function(){
+	console.log(sceneData);
 	if(debugMode != false){ 
 		for(var i=0; i<debugMode; i++){
 			render()
@@ -233,18 +240,33 @@ function fillScreen(R, G, B){
 function raytrace(bounces){
 	if (moving){
 		result2 = new Uint8ClampedArray(new Array(width*height*4).fill(0))
-		traced = new Array(width*height).fill(0)
+		traced = new Array(width*height).fill(0);
+		renderStart = window.performance.now()
+		tracedNum = 0;
 		moving = false
 	}
-	result1 = new Array(width*height*4).fill(0)
+	//Gets full render time
+	if(!(tracedNum < width*height) && renderStart){
+		console.log((window.performance.now() - renderStart)/1000);
+		renderStart = false;
+	}
+	result1 = empty;
 
 	cameraMove();
-	cameraRotate();
 	//sets ray x degrees
 	for(i=0; i<height*width; i++){
 		var foundRay = false
 		var start = 1, end = 1000
-		while(!foundRay && timeSinceLastFrame<frameCap){
+		while(!foundRay && timeSinceLastFrame<frameCap && tracedNum < width*height){
+			//Renders in a top down order
+			if(ordered){
+				var displayPosition = tracedNum*4;
+				var x = tracedNum%width
+				var y = Math.floor(tracedNum/width);
+				foundRay = true
+				break;
+			}
+			//Renders in a random order
 			start = window.performance.now()
 			var x = parseInt(Math.random()*width)
 			var y = parseInt(Math.random()*height)
@@ -253,9 +275,10 @@ function raytrace(bounces){
 			end = window.performance.now()
 			timeSinceLastFrame+=end-start;
 		}
-		if(timeSinceLastFrame<frameCap){
+		if(timeSinceLastFrame<frameCap && foundRay){
 			traced[displayPosition/4]=1
 			raySinceFrame++;
+			tracedNum++;
 			start = window.performance.now()
 
 			//Sets begining state
@@ -273,23 +296,28 @@ function raytrace(bounces){
 			for(var w = 0; w < bounces; w++){
 
 				//checks if ray did indded get a bounce
-				var temp = rayTriITP(rayVector, rayLocation, sceneData, bvh);
-
-				if(temp != false){
+				var temp = sceneXplor(rayVector, rayLocation, sceneData);
+				//break;
+				
+				if(temp != false && w < bounces-1){
 					//updates ray info
-					var itpFace = sceneData[temp[4]][temp[3]];
 					rayLocation = [temp[0], temp[1], temp[2]];
-					var rayTemp = reflectRay(rayVector, itpFace);
+					var rayTemp = reflectRay(rayVector, temp[3]);
 					rayVector = rayTemp[0]
 
 					//changes ray color
-					result1[displayPosition].push([itpFace.color[0],rayTemp[1]]);
-					result1[displayPosition+1].push([itpFace.color[1],rayTemp[1]]);
-					result1[displayPosition+2].push([itpFace.color[2],rayTemp[1]]);
+					result1[displayPosition].push([temp[3].color[0],rayTemp[1]]);
+					result1[displayPosition+1].push([temp[3].color[1],rayTemp[1]]);
+					result1[displayPosition+2].push([temp[3].color[2],rayTemp[1]]);
 				}else{
-					result2[displayPosition]   = fresCol(result1[displayPosition])
-					result2[displayPosition+1] = fresCol(result1[displayPosition+1])
-					result2[displayPosition+2] = fresCol(result1[displayPosition+2])
+					temp = vector3to2(rayVector);
+					temp = vectorScalar(temp,180/Math.PI);
+					var x = parseInt((temp[0]+70)/180*textures[0].width);
+					var y = parseInt((-temp[1]/180+0.5)*textures[0].height);
+					var texPos = (x + (y * textures[0].width))*4;
+					result2[displayPosition]   = fresCol(result1[displayPosition], textures[0].data[texPos])
+					result2[displayPosition+1] = fresCol(result1[displayPosition+1], textures[0].data[texPos+1])
+					result2[displayPosition+2] = fresCol(result1[displayPosition+2], textures[0].data[texPos+2])
 					break;
 				}
 			}
@@ -313,7 +341,7 @@ function render(){
 	height = ctx.height;
 	fov = document.getElementById('fov').value
 
-	raytrace(12);
+	raytrace(bounces);
 	
 	dispTime()
 }
@@ -354,7 +382,7 @@ function getFramerate(){
 		countsSinceLastErr=0
 		hasErr=false
 	}
-	timeSinceLastFrame = 0;
+	timeSinceLastFrame = 1;
 	raySinceFrame = 0;
 }
 //###########################################Render functions###########################################
@@ -433,10 +461,6 @@ function selfImport(object, userMode=false)
 		const obj = new objParse.OBJFile(event.target.result);
 		var content = obj.parse().models[0];
 
-		//max and min vetecies
-		var upperCorner = [];
-		var lowerCorner = [];
-
 		//select faces
 		var objectData = [];
 		content.faces.forEach((value, index)=>{
@@ -448,45 +472,48 @@ function selfImport(object, userMode=false)
 			})
 
 			//get vertex values
-			var ver1 = vectorAdd(Object.values(content.vertices[indexes[0]-1]),offset);
-			var ver2 = vectorAdd(Object.values(content.vertices[indexes[1]-1]),offset);
-			var ver3 = vectorAdd(Object.values(content.vertices[indexes[2]-1]),offset);
-
+			var ver1 = vectorAdd(vectorScalar(Object.values(content.vertices[indexes[0]-1]),scale),offset);
+			var ver2 = vectorAdd(vectorScalar(Object.values(content.vertices[indexes[1]-1]),scale),offset);
+			var ver3 = vectorAdd(vectorScalar(Object.values(content.vertices[indexes[2]-1]),scale),offset);
 
 			//add face to objectData
 			objectData.push(new face(1, color, ver1, ver3, ver2));
-
-			//Get the maximum and minimum verticies
-			var vertexes = [ver1, ver2, ver3];
-			if(index == 0){
-				upperCorner=Object.values(content.vertices[indexes[0]-1]);
-				lowerCorner=Object.values(content.vertices[indexes[0]-1]);
-			}else{
-				vertexes.forEach((v)=>{
-					v.forEach((x, w)=>{
-						if(x > upperCorner[w]){
-							upperCorner[w]=x;
-						}
-					})
-				})
-				vertexes.forEach((v)=>{
-					v.forEach((x, w)=>{
-						if(x < lowerCorner[w]){
-							lowerCorner[w]=x;
-						}
-					})
-				})
-			}
 		})
-		sceneData.push(objectData);
 		//create bounding cube
-		var C = vectorScalar(vectorAdd(upperCorner, lowerCorner), 0.5); //bounding box center
-		bvh.push([C, upperCorner, lowerCorner]);
+		//var C = vectorScalar(vectorAdd(upperCorner, lowerCorner), 0.5); //bounding box center
+		sceneData.push(new BBVH(objectData, 0));
 		
 		//display that another object has been imported 
 		console.log('import success');
 	});
 	fr.readAsText(allText);
+}
+//Self import texture
+function importTexture(path, ind, isAlpha){
+	var oReq = new XMLHttpRequest();
+	oReq.open("GET", path, true);
+	oReq.responseType = "arraybuffer";
+
+	oReq.onreadystatechange = function (){
+		if(oReq.readyState === 4 && (oReq.status === 200 || oReq.status == 0))
+		{
+			var arrayBuffer = oReq.response;
+			if (arrayBuffer) {
+				var byteArray = new Uint8Array(arrayBuffer);
+				var rawImageData = decode(byteArray, {useTArray:true});
+				if(isAlpha){
+					var temp = texturesAlpha
+					temp[ind] = rawImageData
+					texturesAlpha = temp
+				}else{
+					var temp = textures
+					temp[ind] = rawImageData
+					textures = temp
+				}
+			}
+		}
+	};
+	oReq.send(null);
 }
 
 function nothing(){
