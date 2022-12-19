@@ -1,4 +1,4 @@
-import {vectorSubtract, vectorMagnitude, vectorAdd, vectorScalar, vectorDistance, cramerSolve, vectorsToAngle, dotProduct} from './math.js';
+import {gaussianSolve, vectorSubtract, vectorMagnitude, vectorAdd, vectorScalar, vectorDistance, cramerSolve, vectorsToAngle, dotProduct} from './math.js';
 
 //calculate reflection normal 100%
 function reflectRay(R, face){
@@ -9,90 +9,49 @@ function reflectRay(R, face){
 	var loc = vectorAdd(P1, reverser)
 	//Calculate fresnel power
 	var theta = vectorsToAngle(loc, V1)%(Math.PI/2)
-	var preTheta2 = 1.7*Math.sin(theta)
+	//console.log(theta)
+	/*
+	var preTheta2 = 1.01*Math.sin(theta)
 	preTheta2=preTheta2>1?1:preTheta2
 	preTheta2=preTheta2<-1?-1:preTheta2
 	var theta2 = Math.asin(preTheta2)
-	var power = -Math.sin(theta-theta2)/Math.sin(theta+theta2)
-
+	var power = Math.tan(theta-theta2)/Math.tan(theta+theta2)-Math.sin(theta-theta2)/Math.sin(theta+theta2); 
+	*/
+	var power = Math.pow(Math.abs(theta/Math.PI),0.5)
 	return [loc,power];
 }
 
 //check if ray intersects with face and gets bounce location 50%
-function rayTriITP(V1, P1, Data, BVH){
-	var result = [];
-	var indexes = [];
-	var V2, V3, P2, ABC;
-
-	//check for BVH intersection
-	BVH.forEach((box, index)=>{
-		var upCor = box[1];
-		var lwCor = box[2];
-		var bx = lwCor[0], by = lwCor[1], bz = lwCor[2];
-		var ax = upCor[0], ay = upCor[1], az = upCor[2];
-
-		var m = V1[1]/V1[0];
-		var Rybx = P1[1] + m*(bx - P1[0]);
-		var Ryax = P1[1] + m*(ax - P1[0]);
-
-		m = V1[0]/V1[1];
-		var Rxby = P1[0] + m*(by - P1[1]);
-		var Rxay = P1[0] + m*(ay - P1[1]);
-
-		m = V1[2]/V1[0];
-		var Rzbx = P1[2] + m*(bx - P1[0]);
-		var Rzax = P1[2] + m*(ax - P1[0]);
-
-		m = V1[0]/V1[2];
-		var Rxbz = P1[0] + m*(bz - P1[2]);
-		var Rxaz = P1[0] + m*(az - P1[2]);
-		
-		m = V1[2]/V1[1];
-		var Rzby = P1[2] + m*(by - P1[1]);
-		var Rzay = P1[2] + m*(ay - P1[1]);
-
-		m = V1[1]/V1[2];
-		var Rybz = P1[1] + m*(bz - P1[2]);
-		var Ryaz = P1[1] + m*(az - P1[2]);
-
-		if(((bx <= Rxby && Rxby <= ax) || (bx <= Rxay && Rxay <= ax)||
-		   (by <= Rybx && Rybx <= ay) ||(by <= Ryax && Ryax <= ay))
-		   &&
-		   ((bx <= Rxbz && Rxbz <= ax) ||(bx <= Rxaz && Rxaz <= ax) ||
-		   (bz <= Rzbx && Rzbx <= az) ||(bz <= Rzax && Rzax <= az))
-		   &&
-		   ((by <= Rybz && Rybz <= ay) ||(by <= Ryaz && Ryaz <= ay) ||
-		   (bz <= Rzby && Rzby <= az) ||(bz <= Rzay && Rzay <= az))){
-			indexes.push(index);
-		}
-	})
-
+function rayTriITP(V1, P1, T){
 	//if BVH intersection(s) is present, find triangle intersection
-	if(indexes.length != 0){
-		indexes.forEach((index)=>{
-			(Data[index]).forEach((v, i)=>{
-				V2 = v.e1;
-				V3 = v.e2;
-				P2 = v.v1;
-				ABC = cramerSolve(vectorSubtract(P2, P1), [V1[0],-V2[0], -V3[0], V1[1],-V2[1], -V3[1],V1[2],-V2[2], -V3[2]]);
-				/*check if intersection is present*/
-				var temp = ABC[1] + ABC[2];
-				if(temp <= 1 && 0 <= ABC[1] && 0 <= ABC[2] && 0 <= ABC[0]){
-					var loc = vectorAdd(vectorScalar(V1, ABC[0]*0.999999999),P1);
-					result.push([loc[0], loc[1], loc[2], i, index, vectorDistance(P1, loc)]);
-				}
-			})
-		})
+	var V2 = T.e1;
+	var V3 = T.e2;
+	var P2 = T.v1;
+	var ABC;
+	ABC = gaussianSolve(vectorSubtract(P2, P1), [V1[0],-V2[0], -V3[0], V1[1],-V2[1], -V3[1],V1[2],-V2[2], -V3[2]]);
+	/*check if intersection is present*/
+	var temp = ABC[1] + ABC[2];
+	if(temp <= 1 && 0 <= ABC[1] && 0 <= ABC[2] && 0 <= ABC[0]){
+		var loc = vectorAdd(vectorScalar(V1, ABC[0]*0.99999999),P1);
+		return [loc[0], loc[1], loc[2], T, vectorDistance(P1, loc)];
 	}else{
 		return false;
 	}
 	//Get closest intersection
+}
+
+//itterate through object BVH's
+function sceneXplor(rayVector, rayLocation, sceneData){
+	var result = [];
+	sceneData.forEach(v =>{
+		Array.prototype.push.apply(result, v.intersect(rayVector, rayLocation, 0));
+	})
 	var lowestDist = 1000000;
 	var finalIndex = 0;
 	if(result.length > 0){
 		result.forEach((w, index)=>{
-			if(w[5] < lowestDist){
-				lowestDist = w[5];
+			if(w[4] < lowestDist){
+				lowestDist = w[4];
 				finalIndex = index;
 			}
 		})
@@ -103,8 +62,8 @@ function rayTriITP(V1, P1, Data, BVH){
 }
 
 //Calculate fresnel color
-function fresCol(bounces){
-	var final = 255
+function fresCol(bounces, sky){
+	var final = sky
 	for(var i=bounces.length-1; i>=0; i--){
 		final = final*(1-bounces[i][1]) + bounces[i][0]*bounces[i][1]
 	}
@@ -112,4 +71,4 @@ function fresCol(bounces){
 }
 
 
-export {reflectRay, rayTriITP, fresCol};
+export {reflectRay, rayTriITP, fresCol, sceneXplor};

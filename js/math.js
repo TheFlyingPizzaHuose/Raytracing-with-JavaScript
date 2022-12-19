@@ -39,7 +39,8 @@ function vector3To2(vector1, vector2){
 }
 
 //subtract vector 100%
-function vectorSubtract(vector1, vector2){return vector1.map((value, index)=> value-vector2[index]);}
+function vectorSubtract(vector1, vector2){return [vector1[0]-vector2[0],vector1[1]-vector2[1],vector1[2]-vector2[2]];}
+function vectorSubtract2(vector1, vector2){return vector1.map((value, index)=> value-vector2[index]);}
 
 //subtract vector 100%
 function vectorAdd(vector1, vector2){return vector1.map((value, index)=> value+vector2[index]);}
@@ -84,6 +85,30 @@ function cramerSolve(constants, coeffitients, solveYZ=true){
 	}
 }
 
+//solve systems of equations using cramers rule 100%
+function gaussianSolve(constants, coeffitients, solveYZ=true){
+	/*012
+      345
+      678*/
+	var temp = 1/coeffitients[0];
+	coeffitients[0]*=temp, coeffitients[1]*=temp, coeffitients[2]*=temp, constants[0]*=temp;
+	temp = -coeffitients[3];
+	coeffitients[3]+=coeffitients[0]*temp, coeffitients[4]+=coeffitients[1]*temp, coeffitients[5]+=coeffitients[2]*temp, constants[1]+=constants[0]*temp;
+	temp = -coeffitients[6];
+	coeffitients[6]+=coeffitients[0]*temp, coeffitients[7]+=coeffitients[1]*temp, coeffitients[8]+=coeffitients[2]*temp, constants[2]+=constants[0]*temp;
+	
+	temp = 1/coeffitients[4];
+	coeffitients[4]*=temp, coeffitients[5]*=temp, constants[1]*=temp;
+	temp = -coeffitients[7];
+	coeffitients[7]+=coeffitients[4]*temp, coeffitients[8]+=coeffitients[5]*temp, constants[2]+=constants[1]*temp;
+
+	constants[2]*=1/coeffitients[8];
+	var Z = constants[2];
+	var Y = constants[1] - coeffitients[5]*Z;
+	var X = constants[0] - coeffitients[1]*Y - coeffitients[2]*Z;
+	return solveYZ?[X,Y,Z]:X;
+}
+
 //calculate multiplying vector by scalar
 function vectorScalar(vector1, mult){return vector1.map(value=> value*mult);}
 
@@ -116,4 +141,4 @@ function arrayEqual(arr1, arr2){
 }
 
 
-export {dotProduct, vectorMagnitude ,arrayEqual, vectorsToAngle, vector3to2, xyToIndex, degToArc, det, midPoint, vector3To2, vectorSubtract, vectorAdd, vectorScalar, vectorDistance, crossProduct, distanceScale, cramerSolve};
+export {gaussianSolve, dotProduct, vectorMagnitude ,arrayEqual, vectorsToAngle, vector3to2, xyToIndex, degToArc, det, midPoint, vector3To2, vectorSubtract, vectorAdd, vectorScalar, vectorDistance, crossProduct, distanceScale, cramerSolve};
