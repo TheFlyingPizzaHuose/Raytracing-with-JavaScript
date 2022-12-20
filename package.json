@@ -2,7 +2,7 @@
   "name": "raytracing-with-javascript-main",
   "version": "1.0.0",
   "description": "",
-  "main": "main.mjs",
+  "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
