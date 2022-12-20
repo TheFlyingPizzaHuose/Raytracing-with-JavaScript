@@ -6,7 +6,7 @@ import {decode} from './jpeg-js-master/lib/decoder.js'
 
 var debugMode = false;
 var ordered = true;
-var bounces = 5;
+var bounces = 20;
 var frameCap = 1000/24
 //create canvas objects
 var ctx = document.getElementById("screen");
@@ -40,7 +40,7 @@ for(var i = 0; i<10;i++){
 				scale: 0.75});
 }
 selfImport({file: './models/RaytracingJS2.obj', color: [255,255,0], scale: 10, offset: [0,0,0]})
-selfImport({file: './models/dragon.obj', color: [255,255,255], scale: 0.2})
+selfImport({file: './models/dragon.obj', color: [0,100,0], scale: 0.2})
 //selfImport({file: './models/bunny.obj', color: [255,0,0], scale: 0.5})
 
 //Different browser settings
@@ -340,6 +340,18 @@ function render(){
 	ctx.height = document.getElementById('resolutionY').value;
 	height = ctx.height;
 	fov = document.getElementById('fov').value
+
+	//Hides or unhides debug elements
+	var displayMode = showDebug?'inline':'none'
+	var colorMode = showDebug?'orange':'black'
+	document.getElementById('Framerate').setAttribute('style', 'color: '+colorMode)
+	document.getElementById('Rayrate').setAttribute('style', 'color: '+colorMode)
+	try{
+		document.getElementById('settings').setAttribute('style', 'display: '+displayMode)
+	}catch{
+	}
+	document.getElementById('inputLabel').setAttribute('style', 'display: '+displayMode)
+	document.getElementById('keys').setAttribute('style', showDebug?'width: 20px; display: inline; float: none':'display: none')
 
 	raytrace(bounces);
 	
