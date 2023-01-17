@@ -195,4 +195,49 @@ class SBVH{
     }
 }
 
-export {face, BBVH};
+function minSphere(data, d=0.01){
+    var C = [0,0,0];
+    var pnts = [];
+    for(var i = 0; i < data.length;i++){
+        Array.prototype.push.apply(pnts, [data.v1, data.v2, data.v3]);
+        C = vectorAdd(C, data.v1);
+        C = vectorAdd(C, data.v2);
+        C = vectorAdd(C, data.v3);
+    }
+    C = vectorScalar(1/pnts.length, C);//Gets point bounding box center
+    var moveDist = 10,selCord = 0,skipNum = 0,preSign = 0, gamma = 4;
+    while(skipNum < 3){
+        //calculate derivative
+        var d0 = maxDist(C, pnts);
+        var derivative = gamma*(maxDist(dInc(selCord, C, d), pnts) - d0)/d
+        //calculate 0 intercept
+        var move = -center[selCord]/derivative
+        var moveDist = move - center[selCord]
+        C[selCord] = move + (Math.random()*2-1)*gamma*d;//Gradient "jiggle"
+        preSign = preSign == 0?Math.sign(moveDist):preSign
+        if (Math.abs(moveDist) < d*gamma || preSign/Math.sign(moveDist) == -1){
+            preSign = 0
+            skipNum++;
+            if(selCord == 2){
+                selCord = 0
+            }else{
+                selCord++;
+            }
+        }else{
+            skipNum = 0
+        }
+    }
+    return [C, maxDist(C, pnts)];
+}
+
+function dInc(index, p, d){
+    temp = p
+    temp[index] += d;
+    return temp;
+}
+
+function maxDist(point, points){
+    return Math.sqrt(Math.max(points.map(vectorDistance(v, point))));
+}
+
+export {face, BBVH, SBVH};
