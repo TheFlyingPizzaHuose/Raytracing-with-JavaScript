@@ -1,4 +1,4 @@
-import {vectorSubtract, crossProduct} from'./math.js';
+import {vectorSubtract, crossProduct, dotProduct, vectorScalar, vectorAdd, vectorMagnitude, vectorDistance} from'./math.js';
 import {rayTriITP} from './raytracing.js';
 
 class face{
@@ -170,6 +170,28 @@ class BBVH{
             }
         })
         return result;
+    }
+}
+
+class SBVH{
+    constructor(data, center, radius){
+        this.name = 'SBVH'
+        this.children = this.generate(data, center, radius)
+        this.center;
+        this.radius;
+    }
+    get generate(){return this.generate();}
+    generate(data, center, radius){
+    }
+    get intersect(){return this.intersect();}
+    intersect(V1, P1){
+        var R = vectorSubtract(this.center, P1);
+        var B = vectorAdd(vectorScalar(dotProduct(R,V1)/Math.pow(vectorMagnitude(V1),2),V1),P1)
+        var rad = vectorDistance(B,this.center);
+        return rad<this.radius?this.explore(V1, P1):[];
+    }
+    get explore(){return this.explore();}
+    explore(V1, P1){
     }
 }
 
