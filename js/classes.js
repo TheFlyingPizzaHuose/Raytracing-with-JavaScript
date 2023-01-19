@@ -184,28 +184,42 @@ class SBVH{
     }
     get generate(){return this.generate();}
     generate(data){
-        var triCount = 0;
+        if (data.length<10){return data}
         var subGrpInd = [];
         var subGrp = [];
         var point = this.center;
-        while(triCount<data.length * 0.9){//selects triangles
+        while(subGrp.length<data.length * 0.9){//selects triangles
             var nextTriInd = minTriInd(point,data);
             subGrp.push(data[nextTriInd]);
             subGrpInd.push(nextTriInd);
             point = data[nextTriInd].com;
-            triCount++;
         }
-        var actSelec = data;
+        var actSelec = [data.length];
         var sph1;
-        while(accSelec.length > data.length * 0.9){
+        while(accSelec[0] > data.length * 0.9){
             sph1 = minSphere(subGrp);
             accSelec = insSph(sph1[0], sph1[1], data);
-            if(accSelec.length>data.length * 0.9){//deselect 10%
+            if(accSelec[0]>data.length * 0.9){//deselect 10%
                 var cullIndex = parseInt((subGrp.length-1) * 0.9);
                 subGrp = subGrp.splice(0, cullIndex);
                 subGrpInd = subGrpInd.splice(0, cullIndex);
             }
         }
+        subGrp = [];
+        var topGrp = [];
+        for(var i = 0; i < data.length; i++){
+            switch (actSelec[1][i]){
+                case 0:
+                    topGrp.push(data[i]);
+                case 1,2:
+                    topGrp.push(data[i]);
+                    subGrp.push(data[i]);
+                case 3:
+                    subGrp.push(data[i]);
+            }
+        }
+        var temp = [new SBVH(subGrp, sph1[0], sph1[1])]
+        return Array.prototype.push.apply(temp, topGrp);
     }
     get intersect(){return this.intersect();}
     intersect(V1, P1){
@@ -237,7 +251,7 @@ function minSphere(data, d=0.01){
         //calculate 0 intercept
         var move = -center[selCord]/derivative
         var moveDist = move - center[selCord]
-        C[selCord] = move + (Math.random()*2-1)*gamma*d;//Gradient "jiggle"
+        C[selCord] = move + Math.round(Math.random()*2-1)*gamma*d;//Gradient "jiggle"
         preSign = preSign == 0?Math.sign(moveDist):preSign
         if (Math.abs(moveDist) < d*gamma || preSign/Math.sign(moveDist) == -1){
             preSign = 0
@@ -261,7 +275,7 @@ function dInc(index, p, d){
 }
 
 function maxDist(point, points){
-    return Math.sqrt(Math.max(points.map(vectorDistance(v, point))));
+    return Math.max(points.map(vectorDistance(v, point)));
 }
 
 function minTriInd(point, data){
@@ -283,7 +297,7 @@ function insSph(center, radius, data){
         isIn += vectorDistance(data[i].v1, center)<radius;
         isIn += vectorDistance(data[i].v2, center)<radius;
         isIn += vectorDistance(data[i].v3, center)<radius;
-        fulIn.push(isIn == 3?true:false);
+        fulIn.push(isIn);
         if(isIn){result.push(data[i])}
     }
     return [result, fulIn];
