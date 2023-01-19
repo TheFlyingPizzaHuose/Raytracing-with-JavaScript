@@ -185,13 +185,11 @@ class SBVH{
     get generate(){return this.generate();}
     generate(data){
         if (data.length<10){return data}
-        var subGrpInd = [];
         var subGrp = [];
         var point = this.center;
         while(subGrp.length<data.length * 0.9){//selects triangles
             var nextTriInd = minTriInd(point,data);
             subGrp.push(data[nextTriInd]);
-            subGrpInd.push(nextTriInd);
             point = data[nextTriInd].com;
         }
         var actSelec = [data.length];
@@ -202,7 +200,6 @@ class SBVH{
             if(accSelec[0]>data.length * 0.9){//deselect 10%
                 var cullIndex = parseInt((subGrp.length-1) * 0.9);
                 subGrp = subGrp.splice(0, cullIndex);
-                subGrpInd = subGrpInd.splice(0, cullIndex);
             }
         }
         subGrp = [];
