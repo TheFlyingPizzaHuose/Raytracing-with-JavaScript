@@ -266,6 +266,17 @@ function minTriInd(point, data){
 }
 
 function insSph(center, radius, data){
+    var result = [];
+    var fulIn = [];
+    for (var i = 0; i < data.length; i++){
+        var isIn = 0;
+        isIn += vectorDistance(data[i].v1, center)<radius;
+        isIn += vectorDistance(data[i].v2, center)<radius;
+        isIn += vectorDistance(data[i].v3, center)<radius;
+        fulIn.push(isIn == 3?true:false);
+        if(isIn){result.push(data[i])}
+    }
+    return [result, fulIn];
 }
 
 export {face, BBVH, SBVH};
