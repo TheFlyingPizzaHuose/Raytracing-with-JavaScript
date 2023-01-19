@@ -10,6 +10,7 @@ class face{
         this.v1 = v1;
         this.v2 = v2;
         this.v3 = v3;
+        this.com = vectorScalar(1/3, vectorAdd(v1,vectorAdd(v2,v3)));
         this.e1 = vectorSubtract(v2, v1);
         this.e2 = vectorSubtract(v3, v1);
         this.normal = crossProduct(this.e1, this.e2);
@@ -174,14 +175,27 @@ class BBVH{
 }
 
 class SBVH{
-    constructor(data, center, radius){
+    constructor(data, center=false, radius=false){
         this.name = 'SBVH'
-        this.children = this.generate(data, center, radius)
-        this.center;
-        this.radius;
+        this.children = this.generate(data)
+        var sph1 = center?center:minSphere(data);//checks if center has value
+        this.center = sph1[0];
+        this.radius = sph1[1];
     }
     get generate(){return this.generate();}
-    generate(data, center, radius){
+    generate(data){
+        var triCount = 0;
+        var subGrp = [];
+        var point = this.center;
+        while(triCount<data.length * 0.9){//selects triangles
+            var nextTri = minTriInd(point,data);
+            subGrp.push(nextTri);
+            point = nextTri.com;
+        }
+        var actSelec = data.length;
+        while(accSelec > data.length * 0.9){
+
+        }
     }
     get intersect(){return this.intersect();}
     intersect(V1, P1){
@@ -238,6 +252,20 @@ function dInc(index, p, d){
 
 function maxDist(point, points){
     return Math.sqrt(Math.max(points.map(vectorDistance(v, point))));
+}
+
+function minTriInd(point, data){
+    var tri = data[0];
+    var min = vectorDistance(point, data[0].com);
+    for (var i = 1; i < data.length; i++){
+        var dist = vectorDistance(point, data[i].com);
+        min = dist<min?dist:min;
+        tri = dist<min?data[0]:tri;
+    }
+    return tri
+}
+
+function insSph(center, radius, data){
 }
 
 export {face, BBVH, SBVH};
