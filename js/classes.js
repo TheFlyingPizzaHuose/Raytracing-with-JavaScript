@@ -177,24 +177,34 @@ class BBVH{
 class SBVH{
     constructor(data, center=false, radius=false){
         this.name = 'SBVH'
-        this.children = this.generate(data)
-        var sph1 = center?center:minSphere(data);//checks if center has value
-        this.center = sph1[0];
-        this.radius = sph1[1];
+        var sph1 = center?false:minSphere(data);//checks if center has value
+        this.center = sph1?sph1[0]:center;
+        this.radius = sph1?sph1[1]:radius;
+        this.children = this.generate(data);
     }
     get generate(){return this.generate();}
     generate(data){
         var triCount = 0;
+        var subGrpInd = [];
         var subGrp = [];
         var point = this.center;
         while(triCount<data.length * 0.9){//selects triangles
-            var nextTri = minTriInd(point,data);
-            subGrp.push(nextTri);
-            point = nextTri.com;
+            var nextTriInd = minTriInd(point,data);
+            subGrp.push(data[nextTriInd]);
+            subGrpInd.push(nextTriInd);
+            point = data[nextTriInd].com;
+            triCount++;
         }
-        var actSelec = data.length;
-        while(accSelec > data.length * 0.9){
-
+        var actSelec = data;
+        var sph1;
+        while(accSelec.length > data.length * 0.9){
+            sph1 = minSphere(subGrp);
+            accSelec = insSph(sph1[0], sph1[1], data);
+            if(accSelec.length>data.length * 0.9){//deselect 10%
+                var cullIndex = parseInt((subGrp.length-1) * 0.9);
+                subGrp = subGrp.splice(0, cullIndex);
+                subGrpInd = subGrpInd.splice(0, cullIndex);
+            }
         }
     }
     get intersect(){return this.intersect();}
@@ -255,14 +265,14 @@ function maxDist(point, points){
 }
 
 function minTriInd(point, data){
-    var tri = data[0];
+    var ind = 0;
     var min = vectorDistance(point, data[0].com);
     for (var i = 1; i < data.length; i++){
         var dist = vectorDistance(point, data[i].com);
         min = dist<min?dist:min;
-        tri = dist<min?data[0]:tri;
+        ind = dist<min?i:ind;
     }
-    return tri
+    return ind
 }
 
 function insSph(center, radius, data){
