@@ -187,19 +187,26 @@ class SBVH{
         if (data.length<10){return data}
         var subGrp = [];
         var point = this.center;
+        var searchData = data;
         while(subGrp.length<data.length * 0.9){//selects triangles
-            var nextTriInd = minTriInd(point,data);
-            subGrp.push(data[nextTriInd]);
-            point = data[nextTriInd].com;
+            var nextTriInd = minTriInd(point,searchData);
+            subGrp.push(searchData[nextTriInd]);
+            searchData.splice(nextTriInd,1);
+            point = searchData[nextTriInd].com;
         }
-        var actSelec = [data.length];
+        var actSelec = [data];
         var sph1;
-        while(accSelec[0] > data.length * 0.9){
+        while(actSelec[0].length > (data.length * 0.9) && subGrp.length>0){
             sph1 = minSphere(subGrp);
-            accSelec = insSph(sph1[0], sph1[1], data);
-            if(accSelec[0]>data.length * 0.9){//deselect 10%
+            actSelec = insSph(sph1[0], sph1[1], data);
+            if(actSelec[0].length>(data.length * 0.9)){//deselect 10%
                 var cullIndex = parseInt((subGrp.length-1) * 0.9);
                 subGrp = subGrp.splice(0, cullIndex);
+            }
+            if(subGrp.length == 0 && actSelec[0].length <data.length){
+                break;
+            }else if (subGrp.length == 0){
+                return data;
             }
         }
         subGrp = [];
@@ -216,17 +223,35 @@ class SBVH{
             }
         }
         var temp = [new SBVH(subGrp, sph1[0], sph1[1])]
-        return Array.prototype.push.apply(temp, topGrp);
+        console.table(subGrp.length, topGrp.length,data.length, sph1)
+        Array.prototype.push.apply(temp, topGrp);
+        return temp
     }
     get intersect(){return this.intersect();}
     intersect(V1, P1){
         var R = vectorSubtract(this.center, P1);
-        var B = vectorAdd(vectorScalar(dotProduct(R,V1)/Math.pow(vectorMagnitude(V1),2),V1),P1)
+        var B = vectorAdd(vectorScalar(V1, dotProduct(R,V1)/Math.pow(vectorMagnitude(V1),2)),P1)
         var rad = vectorDistance(B,this.center);
         return rad<this.radius?this.explore(V1, P1):[];
     }
     get explore(){return this.explore();}
-    explore(V1, P1){
+    //Finds ray intersection
+    explore(rayVector, rayLocation){
+        var result = [];
+        this.children.forEach(v =>{
+            //If the hirearchy goes into a BVH, explore it
+            if(v.name == 'SBVH'){
+                Array.prototype.push.apply(result, v.intersect(rayVector, rayLocation));
+            }
+            //If the hirarchy is at the bottom, find the triangle intersection
+            else{
+                var temp = rayTriITP(rayVector, rayLocation, v);
+                temp?temp.push(this.depth):temp;
+                temp?temp.push(this.depth2):temp;
+                temp?result.push(temp):temp;
+            }
+        })
+        return result;
     }
 }
 
@@ -234,21 +259,26 @@ function minSphere(data, d=0.01){
     var C = [0,0,0];
     var pnts = [];
     for(var i = 0; i < data.length;i++){
-        Array.prototype.push.apply(pnts, [data.v1, data.v2, data.v3]);
-        C = vectorAdd(C, data.v1);
-        C = vectorAdd(C, data.v2);
-        C = vectorAdd(C, data.v3);
+        Array.prototype.push.apply(pnts, [data[i].v1, data[i].v2, data[i].v3]);
+        C = vectorAdd(C, data[i].v1);
+        C = vectorAdd(C, data[i].v2);
+        C = vectorAdd(C, data[i].v3);
     }
-    C = vectorScalar(1/pnts.length, C);//Gets point bounding box center
+    C = vectorScalar(C, 1/pnts.length);//Gets point bounding box center
     var moveDist = 10,selCord = 0,skipNum = 0,preSign = 0, gamma = 4;
     while(skipNum < 3){
         //calculate derivative
         var d0 = maxDist(C, pnts);
         var derivative = gamma*(maxDist(dInc(selCord, C, d), pnts) - d0)/d
         //calculate 0 intercept
-        var move = -center[selCord]/derivative
-        var moveDist = move - center[selCord]
+        var move = -C[selCord]/derivative
+        var moveDist = move - C[selCord]
         C[selCord] = move + Math.round(Math.random()*2-1)*gamma*d;//Gradient "jiggle"
+        if(isNaN(moveDist)){
+            console.log(C);
+            console.table([C, d0, derivative, move, moveDist])
+            break;
+        }
         preSign = preSign == 0?Math.sign(moveDist):preSign
         if (Math.abs(moveDist) < d*gamma || preSign/Math.sign(moveDist) == -1){
             preSign = 0
@@ -266,13 +296,13 @@ function minSphere(data, d=0.01){
 }
 
 function dInc(index, p, d){
-    temp = p
+    var temp = p
     temp[index] += d;
     return temp;
 }
 
 function maxDist(point, points){
-    return Math.max(points.map(vectorDistance(v, point)));
+    return Math.max(... new Set(points.map(v=>vectorDistance(v, point))));
 }
 
 function minTriInd(point, data){
