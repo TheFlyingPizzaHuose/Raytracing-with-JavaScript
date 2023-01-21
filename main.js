@@ -1,4 +1,4 @@
-import {BBVH, face} from './js/classes.js';
+import {BBVH, SBVH, face} from './js/classes.js';
 import {reflectRay, rayTriITP, fresCol, sceneXplor} from './js/raytracing.js';
 import {degToArc, vectorAdd, vectorScalar, xyToIndex, arrayEqual, vectorSubtract, vector3to2} from './js/math.js'
 import * as objParse from './obj-file-parser/dist/OBJFile.js';
@@ -6,42 +6,55 @@ import {decode} from './jpeg-js-master/lib/decoder.js'
 
 var debugMode = false;
 var ordered = true;
-var bounces = 20;
+var bounces = 2;
+var samples = 1;
 var frameCap = 1000/24
+var skyBoxPower = 1
+
+importTexture('./textures/venice_sunset_8k.jpg', 0);
+for(var i = 0; i<10;i++){
+	break;
+	var temp = [(Math.random()*5)-2.5,(Math.random()*5)-2.5,0];
+	selfImport({file: './models/dragon.obj', 
+				color: [Math.random()*255,Math.random()*255,Math.random()*255],
+				offset: temp,
+				scale: 0.2});
+}
+// /selfImport({file: './models/RaytracingJS2.obj', color: [255,255,0], scale: 10})
+var tempScale = 1.2
+var tempRoughness = 0
+/*selfImport({file: './models/Light.obj', color: [255,255,255], scale: tempScale, isEmmision: 0})
+selfImport({file: './models/Ceiling.obj', color: [255,255,255], scale: tempScale, roughness: tempRoughness})
+selfImport({file: './models/Right.obj', color: [255,0,0], scale: tempScale, roughness: tempRoughness})
+selfImport({file: './models/Left.obj', color: [0,255,0], scale: tempScale, roughness: tempRoughness})
+selfImport({file: './models/Back.obj', color: [0,0,255], scale: tempScale, roughness: tempRoughness})
+selfImport({file: './models/Floor.obj', color: [255,255,0], scale: tempScale, roughness: tempRoughness})*/
+//selfImport({file: './models/dragon.obj', color: [0,100,0], scale: 0.2})
+selfImport({file: './models/Suzzane.obj', color: [100,0,0], position: [0,0,1]})
+//selfImport({file: './models/bunny.obj', color: [255,0,0], scale: 0.5})
+
 //create canvas objects
-var ctx = document.getElementById("screen");
-var c = ctx.getContext("2d");
+var ctx = document.getElementById("screen"), c = ctx.getContext("2d");
 var graph = document.getElementById('Frametime'),  graphc = document.getElementById('Frametime').getContext("2d");;
-var width = ctx.width;
-var height = ctx.height;
+var width = ctx.width, height = ctx.height;
 
 //Debug variables
 var renderStart=0,raySinceFrame = 0,timeSinceLastFrame=0,hasErr=false,countsSinceLastErr=0,showDebug=true, frameTimeGraph=[];
 //Texture variables
-var textures=[],textCoords=[],texturesAlpha=[];
+var textures=[],texturesAlpha=[];
 
 var sceneData = [];
+
+//Camera variables
 var cameraPer=[1,0,0],cameraVector3=[0,1,0],cameraVer=[0,0,-1];
 var cameraLocation = [0, -7, 1];
 var fov = 70;
 var fovRation = Math.sin(degToArc(fov));
 
+//Screen variables
 var empty = new Array(width*height*4).fill(0), result1 = empty;
 var result2 = new Uint8ClampedArray(new Array(width*height*4).fill(0))
 var traced = new Array(width*height).fill(0), tracedNum = 0;
-
-importTexture('./textures/venice_sunset_8k.jpg', 0);
-for(var i = 0; i<10;i++){
-	break;
-	var temp = [(Math.random()*5)-2.5,(Math.random()*5)-2.5,1];
-	selfImport({file: './models/Planet.obj', 
-				color: [Math.random()*255,Math.random()*255,Math.random()*255],
-				offset: temp,
-				scale: 0.75});
-}
-selfImport({file: './models/RaytracingJS2.obj', color: [255,255,0], scale: 10, offset: [0,0,0]})
-selfImport({file: './models/dragon.obj', color: [0,100,0], scale: 0.2})
-//selfImport({file: './models/bunny.obj', color: [255,0,0], scale: 0.5})
 
 //Different browser settings
 if(/^((?!chrome|android).)*safari/i.test(navigator.userAgent)) {
@@ -218,28 +231,12 @@ function display(image){
 	c.putImageData(canvasImage, 0, 0);
 }
 
-//fills image data array with single color
-function fillScreen(R, G, B){
-	var c = document.getElementById("screen");
-	var result = [];
-	for (var h=0; h<height; h++){
-		for (var w=0; w<width; w++){
-			var i = ((h*width) + w) * 4;
-			result[i    ] = R;
-			result[i + 1] = G;
-			result[i + 2] = B;
-			result[i + 3] = 255;
-		}
-	}
-	return result;
-}
-
 //###########################################Render functions###########################################
 
 //render method
-function raytrace(bounces){
+function raytrace(bounces, samples){
 	if (moving){
-		result2 = new Uint8ClampedArray(new Array(width*height*4).fill(0))
+		result2 = new Array(width*height*4).fill(0)
 		traced = new Array(width*height).fill(0);
 		renderStart = window.performance.now()
 		tracedNum = 0;
@@ -250,14 +247,11 @@ function raytrace(bounces){
 		console.log((window.performance.now() - renderStart)/1000);
 		renderStart = false;
 	}
-	result1 = empty;
 
-	cameraMove();
-	//sets ray x degrees
 	for(i=0; i<height*width; i++){
 		var foundRay = false
 		var start = 1, end = 1000
-		while(!foundRay && timeSinceLastFrame<frameCap && tracedNum < width*height){
+		while(!foundRay && timeSinceLastFrame<frameCap && tracedNum < width*height){//Ray coordinate finder
 			//Renders in a top down order
 			if(ordered){
 				var displayPosition = tracedNum*4;
@@ -283,8 +277,7 @@ function raytrace(bounces){
 
 			//Sets begining state
 			var rayLocation = cameraLocation;
-			var rayVector = vectorAdd(vectorScalar(cameraVer,fovRation*y/width-0.25), vectorAdd(cameraVector3, 
-										vectorScalar(cameraPer,fovRation*x/width-0.5)));
+			var rayVector = vectorAdd(vectorScalar(cameraVer,fovRation*y/width-0.25), vectorAdd(cameraVector3, vectorScalar(cameraPer,fovRation*x/width-0.5)));
 
 			//sets colors to 0,0,0
 			result1[displayPosition] 	= [];
@@ -292,35 +285,42 @@ function raytrace(bounces){
 			result1[displayPosition + 2] = [];
 			result2[displayPosition + 3] = 255;
 
-			//bounces x amount of times			
-			for(var w = 0; w < bounces; w++){
-
-				//checks if ray did indded get a bounce
-				var temp = sceneXplor(rayVector, rayLocation, sceneData);
-				//break;
-				
-				if(temp != false && w < bounces-1){
-					//updates ray info
-					rayLocation = [temp[0], temp[1], temp[2]];
-					var rayTemp = reflectRay(rayVector, temp[3]);
-					rayVector = rayTemp[0]
-
-					//changes ray color
-					result1[displayPosition].push([temp[3].color[0],rayTemp[1]]);
-					result1[displayPosition+1].push([temp[3].color[1],rayTemp[1]]);
-					result1[displayPosition+2].push([temp[3].color[2],rayTemp[1]]);
-				}else{
-					temp = vector3to2(rayVector);
-					temp = vectorScalar(temp,180/Math.PI);
-					var x = parseInt((temp[0]+70)/180*textures[0].width);
-					var y = parseInt((-temp[1]/180+0.5)*textures[0].height);
-					var texPos = (x + (y * textures[0].width))*4;
-					result2[displayPosition]   = fresCol(result1[displayPosition], textures[0].data[texPos])
-					result2[displayPosition+1] = fresCol(result1[displayPosition+1], textures[0].data[texPos+1])
-					result2[displayPosition+2] = fresCol(result1[displayPosition+2], textures[0].data[texPos+2])
-					break;
+			for(var s = 0; s < samples; s++){	//launch x amount of samples
+				for(var w = 0; w < bounces; w++){//bounces x amount of times		
+					var temp = sceneXplor(rayVector, rayLocation, sceneData);//checks if ray did indded get a bounce
+					
+					if(temp != false && w < bounces-1){
+						if(temp[3].isEmmision){//Stops bouncing if face is lightsource
+							result2[displayPosition]+=fresCol(result1[displayPosition], temp[3].color[0], temp[3].isEmmision)
+							result2[displayPosition+1]+=fresCol(result1[displayPosition+1], temp[3].color[1], temp[3].isEmmision)
+							result2[displayPosition+2]+=fresCol(result1[displayPosition+2], temp[3].color[2], temp[3].isEmmision)
+							break;
+						}
+						//updates ray info
+						rayLocation = [temp[0], temp[1], temp[2]];
+						var rayTemp = reflectRay(rayVector, temp[3]);
+						rayVector = rayTemp[0]
+	
+						//changes ray color
+						result1[displayPosition].push([temp[3].color[0],rayTemp[1], temp[4]]);
+						result1[displayPosition+1].push([temp[3].color[1],rayTemp[1], temp[4]]);
+						result1[displayPosition+2].push([temp[3].color[2],rayTemp[1], temp[4]]);
+					}else{
+						temp = vector3to2(rayVector);
+						temp = vectorScalar(temp,180/Math.PI);
+						var x = parseInt((temp[0]+70)/180*textures[0].width);
+						var y = parseInt((-temp[1]/180+0.5)*textures[0].height);
+						var texPos = (x + (y * textures[0].width))*4;
+						result2[displayPosition]+=fresCol(result1[displayPosition], textures[0].data[texPos], skyBoxPower)
+						result2[displayPosition+1]+=fresCol(result1[displayPosition+1], textures[0].data[texPos+1], skyBoxPower)
+						result2[displayPosition+2]+=fresCol(result1[displayPosition+2], textures[0].data[texPos+2], skyBoxPower)
+						break;
+					}
 				}
 			}
+			result2[displayPosition]/=samples;
+			result2[displayPosition+1]/=samples;
+			result2[displayPosition+2]/=samples;
 			end = window.performance.now()
 			timeSinceLastFrame+=end-start;
 		}else{
@@ -329,8 +329,6 @@ function raytrace(bounces){
 			return
 		}
 	}
-	//draws image
-	display(result2);
 }
 
 //render timed
@@ -353,7 +351,9 @@ function render(){
 	document.getElementById('inputLabel').setAttribute('style', 'display: '+displayMode)
 	document.getElementById('keys').setAttribute('style', showDebug?'width: 20px; display: inline; float: none':'display: none')
 
-	raytrace(bounces);
+	raytrace(bounces, samples);
+	cameraMove();// Moves camera
+	cameraRotate();
 	
 	dispTime()
 }
@@ -382,11 +382,10 @@ function dispTime(){
 
 //gets framerate and displays
 function getFramerate(){
-	document.getElementById('Rayrate').textContent = 'Rayrate: ' + (raySinceFrame*1000/timeSinceLastFrame).toFixed(2) + ' '
+	document.getElementById('Rayrate').textContent = 'Rayrate: ' + parseInt(raySinceFrame*1000/timeSinceLastFrame) + ' '
 	if(!hasErr){
 		document.getElementById('Framerate').textContent = 'Framerate: ' + (1000/timeSinceLastFrame).toFixed(2) + ' '
 	}else{
-		nothing();
 	}
 	if(countsSinceLastErr<10){
 		countsSinceLastErr++
@@ -401,23 +400,19 @@ function getFramerate(){
 //###########################################Camera Math###########################################
 //moves camera
 function cameraMove(){
-	increaseSpeed? movementSpeed*=1.1: nothing();
-	decreaseSpeed? movementSpeed=movementSpeed/1.1: nothing();
-	moveForward? cameraLocation = vectorAdd(cameraLocation, vectorScalar(cameraVector3, 0.1*movementSpeed)): nothing();
-	moveBackward? cameraLocation = vectorAdd(cameraLocation, vectorScalar(cameraVector3, -0.1*movementSpeed)): nothing();
-	moveLeft? cameraLocation = vectorAdd(cameraLocation, vectorScalar(cameraPer, -0.1*movementSpeed)): nothing();
-	moveRight? cameraLocation = vectorAdd(cameraLocation, vectorScalar(cameraPer, 0.1*movementSpeed)): nothing();
-	moveUp? cameraLocation = vectorAdd(cameraLocation, vectorScalar(cameraVer, -0.1*movementSpeed)): nothing();
-	moveDown? cameraLocation = vectorAdd(cameraLocation, vectorScalar(cameraVer, 0.1*movementSpeed)): nothing();
-	if (moveForward || moveBackward || moveLeft || moveRight || moveUp || moveDown){
-		moving = true
-	}
+	moving = ((moveForward || moveBackward) || (moveLeft || moveRight)) || (moveUp || moveDown)
+	increaseSpeed? movementSpeed*=1.1: null;
+	decreaseSpeed? movementSpeed=movementSpeed/1.1: null;
+	moveForward? cameraLocation = vectorAdd(cameraLocation, vectorScalar(cameraVector3, 0.1*movementSpeed)): null;
+	moveBackward? cameraLocation = vectorAdd(cameraLocation, vectorScalar(cameraVector3, -0.1*movementSpeed)): null;
+	moveLeft? cameraLocation = vectorAdd(cameraLocation, vectorScalar(cameraPer, -0.1*movementSpeed)): null;
+	moveRight? cameraLocation = vectorAdd(cameraLocation, vectorScalar(cameraPer, 0.1*movementSpeed)): null;
+	moveUp? cameraLocation = vectorAdd(cameraLocation, vectorScalar(cameraVer, -0.1*movementSpeed)): null;
+	moveDown? cameraLocation = vectorAdd(cameraLocation, vectorScalar(cameraVer, 0.1*movementSpeed)): null;
 }
 //turns camera
 function cameraRotate(X=0, Y=0){
-	if(X!=0 || Y!=0 || tiltLeft || tiltRight){
-		moving = true
-	}
+	moving = X!=0 || Y!=0 || tiltLeft || tiltRight
 	//Perform roll
 	var arcX = degToArc(X), arcY = degToArc(Y)
 	var tempVer = tiltRight? vectorAdd(vectorScalar(cameraVer, Math.sin(degToArc(91))), vectorScalar(cameraPer, Math.cos(degToArc(91)))): cameraVer
@@ -449,7 +444,7 @@ function selfImport(object, userMode=false)
 		isEmmision=object.isEmmision!=undefined?object.isEmmision:false, 
 		isBackground=object.isBackground!=undefined?object.isBackground:false, 
 		LOD=object.LOD!=undefined?object.LOD:false,
-		roughness=object.roughness!=undefined?object.roughness:3,
+		roughness=object.roughness!=undefined?object.roughness:0,
 		textureIndex=object.textureIndex!=undefined?object.textureIndex:0,
 		color=object.color!=undefined?object.color:[255,0,255]
 	var rawFile = new XMLHttpRequest();
@@ -489,7 +484,7 @@ function selfImport(object, userMode=false)
 			var ver3 = vectorAdd(vectorScalar(Object.values(content.vertices[indexes[2]-1]),scale),offset);
 
 			//add face to objectData
-			objectData.push(new face(1, color, ver1, ver3, ver2));
+			objectData.push(new face(roughness, color, ver1, ver3, ver2, isEmmision));
 		})
 		//create bounding cube
 		//var C = vectorScalar(vectorAdd(upperCorner, lowerCorner), 0.5); //bounding box center
@@ -526,8 +521,4 @@ function importTexture(path, ind, isAlpha){
 		}
 	};
 	oReq.send(null);
-}
-
-function nothing(){
-	return null;
 }
