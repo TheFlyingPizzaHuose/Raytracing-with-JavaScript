@@ -180,26 +180,27 @@ class SBVH{
         var sph1 = center?false:minSphere(data);//checks if center has value
         this.center = sph1?sph1[0]:center;
         this.radius = sph1?sph1[1]:radius;
-        this.children = this.generate(data);
+        var start = window.performance.now();
+        this.children = this.generate(data, 0.999);
+        console.log((window.performance.now() -start)/1000);
     }
     get generate(){return this.generate();}
-    generate(data){
-        if (data.length<10){return data}
+    generate(data, selectPercent = 0.9){
         var subGrp = [];
         var point = this.center;
-        var searchData = data;
-        while(subGrp.length<data.length * 0.9){//selects triangles
+        var searchData = [...data];//Pass val not ref
+        while(subGrp.length<data.length * selectPercent){//selects triangles
             var nextTriInd = minTriInd(point,searchData);
             subGrp.push(searchData[nextTriInd]);
-            searchData.splice(nextTriInd,1);
             point = searchData[nextTriInd].com;
+            searchData.splice(nextTriInd,1);
         }
         var actSelec = [data];
         var sph1;
-        while(actSelec[0].length > (data.length * 0.9) && subGrp.length>0){
+        while(actSelec[0].length > (data.length * selectPercent) && subGrp.length>0){
             sph1 = minSphere(subGrp);
             actSelec = insSph(sph1[0], sph1[1], data);
-            if(actSelec[0].length>(data.length * 0.9)){//deselect 10%
+            if(actSelec[0].length>(data.length * selectPercent)){//deselect 10%
                 var cullIndex = parseInt((subGrp.length-1) * 0.9);
                 subGrp = subGrp.splice(0, cullIndex);
             }
@@ -215,15 +216,19 @@ class SBVH{
             switch (actSelec[1][i]){
                 case 0:
                     topGrp.push(data[i]);
+                    break;
                 case 1,2:
                     topGrp.push(data[i]);
                     subGrp.push(data[i]);
+                    break;
                 case 3:
                     subGrp.push(data[i]);
+                    break;
             }
         }
+        console.table([subGrp.length, topGrp.length,data.length])
         var temp = [new SBVH(subGrp, sph1[0], sph1[1])]
-        console.table(subGrp.length, topGrp.length,data.length, sph1)
+        topGrp = [new BBVH(topGrp, 0)];
         Array.prototype.push.apply(temp, topGrp);
         return temp
     }
@@ -240,7 +245,7 @@ class SBVH{
         var result = [];
         this.children.forEach(v =>{
             //If the hirearchy goes into a BVH, explore it
-            if(v.name == 'SBVH'){
+            if(v.name == 'SBVH' || v.name == 'BBVH'){
                 Array.prototype.push.apply(result, v.intersect(rayVector, rayLocation));
             }
             //If the hirarchy is at the bottom, find the triangle intersection
